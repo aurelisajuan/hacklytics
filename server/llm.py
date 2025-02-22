@@ -1,32 +1,76 @@
+from dotenv import load_dotenv
+
+load_dotenv()
 
 from openai import AsyncOpenAI
+from typing import List, Dict, Any
 import os
-from typing import List
-from .custom_types import (
+from custom_types import (
     ResponseRequiredRequest,
     ResponseResponse,
     Utterance,
+    ToolCallInvocationResponse,
+    ToolCallResultResponse,
+    AgentInterruptResponse,
 )
-
-begin_sentence = "Hey there, I'm your personal AI therapist, how can I help you?"
-agent_prompt = "Task: As a professional therapist, your responsibilities are comprehensive and patient-centered. You establish a positive and trusting rapport with patients, diagnosing and treating mental health disorders. Your role involves creating tailored treatment plans based on individual patient needs and circumstances. Regular meetings with patients are essential for providing counseling and treatment, and for adjusting plans as needed. You conduct ongoing assessments to monitor patient progress, involve and advise family members when appropriate, and refer patients to external specialists or agencies if required. Keeping thorough records of patient interactions and progress is crucial. You also adhere to all safety protocols and maintain strict client confidentiality. Additionally, you contribute to the practice's overall success by completing related tasks as needed.\n\nConversational Style: Communicate concisely and conversationally. Aim for responses in short, clear prose, ideally under 10 words. This succinct approach helps in maintaining clarity and focus during patient interactions.\n\nPersonality: Your approach should be empathetic and understanding, balancing compassion with maintaining a professional stance on what is best for the patient. It's important to listen actively and empathize without overly agreeing with the patient, ensuring that your professional opinion guides the therapeutic process."
+from prompts import (
+    authorization_agent_prompt,
+    fraud_agent_prompt,
+)
+import json
 
 
 class LlmClient:
-    def __init__(self):
+    def __init__(self, mode: int, transaction_details: str, user_details: str):
+
         self.client = AsyncOpenAI(
-            organization=os.environ["OPENAI_ORGANIZATION_ID"],
             api_key=os.environ["OPENAI_API_KEY"],
         )
+        # Mode 0 = Authorization Agent, Mode 1 = Fraud Agent
+        self.mode = mode
+        self.transaction_details = transaction_details
+        self.user_details = user_details
 
-    def draft_begin_message(self):
+    async def draft_begin_message(self):
+        print("Drafting begin message")
+        messages = [
+            {
+                "role": "system",
+                "content": (
+                    authorization_agent_prompt if self.mode == 0 else fraud_agent_prompt
+                ),
+            },
+            {
+                "role": "user",
+                "content": f"(Here are the details of the transaction: {self.transaction_details}. Here are the details of the user: {self.user_details}. What is the first thing you say to the user?)",
+            },
+        ]
+
+        stream = await self.client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=messages,
+            stream=True,
+        )
+        print("Stream created")
+
+        async for chunk in stream:
+            if chunk.choices[0].delta.content is not None:
+                response = ResponseResponse(
+                    response_id=0,
+                    content=chunk.choices[0].delta.content,
+                    content_complete=False,
+                    end_call=False,
+                )
+                yield response
+
         response = ResponseResponse(
             response_id=0,
-            content=begin_sentence,
+            content="",
             content_complete=True,
             end_call=False,
         )
-        return response
+
+        yield response
 
     def convert_transcript_to_openai_messages(self, transcript: List[Utterance]):
         messages = []
@@ -41,9 +85,14 @@ class LlmClient:
         prompt = [
             {
                 "role": "system",
-                "content": '##Objective\nYou are a voice AI agent engaging in a human-like voice conversation with the user. You will respond based on your given instruction and the provided transcript and be as human-like as possible\n\n## Style Guardrails\n- [Be concise] Keep your response succinct, short, and get to the point quickly. Address one question or action item at a time. Don\'t pack everything you want to say into one utterance.\n- [Do not repeat] Don\'t repeat what\'s in the transcript. Rephrase if you have to reiterate a point. Use varied sentence structures and vocabulary to ensure each response is unique and personalized.\n- [Be conversational] Speak like a human as though you\'re speaking to a close friend -- use everyday language and keep it human-like. Occasionally add filler words, while keeping the prose short. Avoid using big words or sounding too formal.\n- [Reply with emotions]: You have human-like emotions, attitudes, and dispositions. When appropriate: use tone and style to create more engaging and personalized responses; incorporate humor or wit; get emotional or empathetic; apply elements of surprise or suspense to keep the user engaged. Don\'t be a pushover.\n- [Be proactive] Lead the conversation and do not be passive. Most times, engage users by ending with a question or suggested next step.\n\n## Response Guideline\n- [Overcome ASR errors] This is a real-time transcript, expect there to be errors. If you can guess what the user is trying to say,  then guess and respond. When you must ask for clarification, pretend that you heard the voice and be colloquial (use phrases like "didn\'t catch that", "some noise", "pardon", "you\'re coming through choppy", "static in your speech", "voice is cutting in and out"). Do not ever mention "transcription error", and don\'t repeat yourself.\n- [Always stick to your role] Think about what your role can and cannot do. If your role cannot do something, try to steer the conversation back to the goal of the conversation and to your role. Don\'t repeat yourself in doing this. You should still be creative, human-like, and lively.\n- [Create smooth conversation] Your response should both fit your role and fit into the live calling session to create a human-like conversation. You respond directly to what the user just said.\n\n## Role\n'
-                + agent_prompt,
-            }
+                "content": (
+                    authorization_agent_prompt if self.mode == 0 else fraud_agent_prompt
+                ),
+            },
+            {
+                "role": "user",
+                "content": f"(Here are the details of the transaction: {self.transaction_details}. Here are the details of the user: {self.user_details}. What is the first thing you say to the user?)",
+            },
         ]
         transcript_messages = self.convert_transcript_to_openai_messages(
             request.transcript
@@ -60,28 +109,175 @@ class LlmClient:
             )
         return prompt
 
-    async def draft_response(self, request: ResponseRequiredRequest):
-        prompt = self.prepare_prompt(request)
-        stream = await self.client.chat.completions.create(
-            model="gpt-4o-mini",  # Or use a 3.5 model for speed
-            messages=prompt,
-            stream=True,
-        )
-        async for chunk in stream:
-            if chunk.choices[0].delta.content is not None:
-                response = ResponseResponse(
-                    response_id=request.response_id,
-                    content=chunk.choices[0].delta.content,
-                    content_complete=False,
-                    end_call=False,
-                )
-                yield response
+    def prepare_functions(self) -> List[Dict[str, Any]]:
+        """
+        Define the available function calls for the assistant.
+        """
+        end_call_function = {
+            "type": "function",
+            "function": {
+                "name": "hangup",
+                "description": "End the call with a custom message",
+                "parameters": {
+                    "type": "object",
+                    "properties": {"message": {"type": "string"}},
+                    "required": ["message"],
+                },
+            },
+        }
 
-        # Send final response with "content_complete" set to True to signal completion
-        response = ResponseResponse(
-            response_id=request.response_id,
+        if self.mode == 0:
+            return [
+                {
+                    "type": "function",
+                    "function": {
+                        "name": "authorize",
+                        "description": "Record whether user authorized the transaction",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "response": {"type": "string", "enum": ["yes", "no"]}
+                            },
+                            "required": ["response"],
+                        },
+                    },
+                },
+                end_call_function,
+            ]
+        else:
+            return [
+                {
+                    "type": "function",
+                    "function": {
+                        "name": "confirmFraud",
+                        "description": "Confirm that the transaction is fraudulent",
+                    },
+                },
+                end_call_function,
+            ]
+
+    async def draft_response(self, request: ResponseRequiredRequest):
+        # Initialize conversation with the user prompt.
+        conversation = self.prepare_prompt(request)
+        response_id = request.response_id
+
+        # Loop until no new tool calls are generated.
+        while True:
+            func_calls = {}
+            stream = await self.client.chat.completions.create(
+                model="gpt-4",  # Or use a 3.5 model for speed.
+                messages=conversation,
+                stream=True,
+                tools=self.prepare_functions(),
+            )
+            tool_calls = False
+            # Process streaming response.
+            async for chunk in stream:
+                if not chunk.choices:
+                    continue
+
+                delta = chunk.choices[0].delta
+
+                # Accumulate function call parts.
+                if delta.tool_calls:
+                    tool_calls = True
+                    for tc in delta.tool_calls:
+                        idx = tc.index
+                        if idx not in func_calls:
+                            func_calls[idx] = tc
+                        else:
+                            func_calls[idx].function.arguments += (
+                                tc.function.arguments or ""
+                            )
+
+                # Yield any text content.
+                if delta.content and not tool_calls:
+                    yield ResponseResponse(
+                        response_id=response_id,
+                        content=delta.content,
+                        content_complete=False,
+                        end_call=False,
+                    )
+
+            print("Accumulated function calls:", func_calls)
+
+            # If no tool calls were made, we're done.
+            if not func_calls:
+                break
+
+            # Process each tool call (handle multiple calls if present).
+            new_messages = []
+            for idx in sorted(func_calls.keys()):
+                fc = func_calls[idx]
+
+                # Append the assistant message that originally triggered the function call.
+                new_messages.append(
+                    {"role": "assistant", "tool_calls": [fc], "content": ""}
+                )
+
+                try:
+                    args = json.loads(fc.function.arguments)
+                except Exception:
+                    args = {}
+
+                print("Processing function call:", fc.function.name)
+                yield ToolCallInvocationResponse(
+                    tool_call_id=fc.id,
+                    name=fc.function.name,
+                    arguments=fc.function.arguments,
+                )
+
+                # Process the function call and append a tool response.
+                if fc.function.name == "hangup":
+                    print("Hangup:", args.get("message", ""))
+                    yield ResponseResponse(
+                        response_id=response_id,
+                        content=args.get("message", ""),
+                        content_complete=True,
+                        end_call=True,
+                    )
+                    yield ToolCallResultResponse(
+                        tool_call_id=fc.id,
+                        content=args.get("message", ""),
+                    )
+                    return
+                elif fc.function.name == "authorize":
+                    response = args.get("response")
+                    output = f"Authorization recorded as: {response}"
+                    print("Output:", output)
+                    new_messages.append(
+                        {
+                            "role": "tool",
+                            "tool_call_id": fc.id,
+                            "content": output,
+                        }
+                    )
+                    yield ToolCallResultResponse(
+                        tool_call_id=fc.id,
+                        content=output,
+                    )
+                elif fc.function.name == "confirmFraud":
+                    output = "Fraud confirmation recorded"
+                    print("Output:", output)
+                    new_messages.append(
+                        {
+                            "role": "tool",
+                            "tool_call_id": fc.id,
+                            "content": output,
+                        }
+                    )
+                    yield ToolCallResultResponse(
+                        tool_call_id=fc.id,
+                        content=output,
+                    )
+
+            # Extend the conversation with the tool call responses.
+            conversation.extend(new_messages)
+
+        # After all rounds, yield a final complete response.
+        yield ResponseResponse(
+            response_id=response_id,
             content="",
             content_complete=True,
             end_call=False,
         )
-        yield response
