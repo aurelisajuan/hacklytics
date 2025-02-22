@@ -7,127 +7,175 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://default.sup
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_KEY || 'defaultSupabaseKey';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-interface Update {
-    transaction_date: string;
-    cc: string;
-    merchant: string;
-    category: string;
-    amount: number;
+interface Customer {
     first_name: string;
     last_name: string;
-    long: number;
+    cc: string;
+    street: string;
+    city: string;
+    state: string;
+    zip: number;
     lat: number;
-    merch_long: number;
-    merch_lat: number;
+    long: number;
+    job: string;
+    dob: string;
+    gender: string;
+}
+
+interface Transaction {
+    merchant: string;
+    category: string;
     trans_num: number;
+    trans_date: string;
+    trans_time: string;
+    amt: number;
+    merch_lat: number;
+    merch_long: number;
     is_fraud: boolean;
+    cc_num: string;
+    user_id: string;
 }
 
 const RealtimeUpdates: React.FC = () => {
-    const [updates, setUpdates] = useState<Update[]>([]);
+    const [updates, setUpdates] = useState<Transaction[]>([]);
 
     const insertData = async () => {
-        const newData: Update = {
-        transaction_date: new Date().toISOString(),
-        cc: '4111 1111 1111 1111',
-        merchant: 'Example Merchant',
-        category: 'Retail',
-        amount: 100,
-        first_name: 'John',
-        last_name: 'Doe',
-        long: -122.4194,
-        lat: 37.7749,
-        merch_long: -122.4194,
-        merch_lat: 37.7749,
-        trans_num: Math.floor(Math.random() * 1000000),
-        is_fraud: false,
+        const newCustomer: Customer = {
+            first_name: 'John',
+            last_name: 'Doe',
+            cc: '4111 1111 1111 1111',
+            street: '123 Main St',
+            city: 'San Francisco',
+            state: 'CA',
+            zip: 94105,
+            lat: 37.7749,
+            long: -122.4194,
+            job: 'Software Engineer',
+            dob: '1990-01-01',
+            gender: 'M'
         };
 
-        const { data, error } = await supabase.from('dataset').insert(newData);
-        console.log(error)
-        console.log(data)
+        const { data: customerData, error: customerError } = await supabase
+            .from('customer')
+            .insert(newCustomer)
+            .select();
 
-        // if (error) {
-        // console.error('Error inserting data:', error);
-        // } else {
-        // console.log('Data inserted successfully:', data);
-        // }
+        if (customerError) {
+            console.log(customerError);
+            return;
+        }
+
+        const userId = customerData[0].id;
+        const now = new Date();
+
+        const newTransaction: Transaction = {
+            merchant: 'Example Merchant',
+            category: 'Retail',
+            trans_num: Math.floor(Math.random() * 1000000),
+            trans_date: now.toISOString().split('T')[0], // e.g. "2025-02-22"
+            trans_time: now.toISOString(),              // e.g. "2025-02-22T09:26:42.123Z"
+            amt: 100,
+            merch_lat: 37.7749,
+            merch_long: -122.4194,
+            is_fraud: false,
+            cc_num: newCustomer.cc,
+            user_id: userId
+        };
+
+        const { data: transactionData, error: transactionError } = await supabase
+            .from('transaction')
+            .insert(newTransaction);
+
+        if (transactionError) {
+            console.log(transactionError);
+            return;
+        }
+
+        console.log('Customer and Transaction inserted successfully:', { customerData, transactionData });
+
+        setUpdates((prev) => [...prev, newTransaction]);
     };
 
     useEffect(() => {
         const channel = supabase
-        .channel('hacklytics')
-        .on(
-            'postgres_changes',
-            {
-            event: '*',
-            schema: 'public', 
-            table: 'dataset',
-            },
-            (payload) => {
-            console.log('Realtime update received:', payload);
-            const newUpdate = payload.new as Update;
-            setUpdates((prev) => [...prev, newUpdate]);
-            }
-        )
-        .subscribe();
+            .channel('hacklytics')
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'transaction'
+                },
+                (payload) => {
+                    console.log('Realtime update received:', payload);
+                    const newUpdate = payload.new as Transaction;
+                    // Avoid duplicates if already added manually.
+                    setUpdates((prev) => {
+                        if (prev.find((update) => update.trans_num === newUpdate.trans_num)) {
+                            return prev;
+                        }
+                        return [...prev, newUpdate];
+                    });
+                }
+            )
+            .subscribe();
 
         return () => {
-        supabase.removeChannel(channel);
+            supabase.removeChannel(channel);
         };
     }, []);
 
     return (
         <div>
-        <h1>Realtime Database Updates</h1>
-        <button onClick={insertData} style={{ marginBottom: '20px' }}>
-            Insert Data
-        </button>
-        {updates.length === 0 ? (
-            <p>No updates available yet.</p>
-        ) : (
-            updates.map((update) => (
-            <div
-                key={update.trans_num}
-                style={{
-                border: '1px solid #ccc',
-                padding: '10px',
-                marginBottom: '10px',
-                }}
-            >
-                <p>
-                <strong>Transaction Date:</strong> {update.transaction_date}
-                </p>
-                <p>
-                <strong>Credit Card:</strong> {update.cc}
-                </p>
-                <p>
-                <strong>Merchant:</strong> {update.merchant}
-                </p>
-                <p>
-                <strong>Category:</strong> {update.category}
-                </p>
-                <p>
-                <strong>Amount:</strong> {update.amount}
-                </p>
-                <p>
-                <strong>Name:</strong> {update.first_name} {update.last_name}
-                </p>
-                <p>
-                <strong>Location:</strong> {update.lat}, {update.long}
-                </p>
-                <p>
-                <strong>Merchant Location:</strong> {update.merch_lat}, {update.merch_long}
-                </p>
-                <p>
-                <strong>Transaction Number:</strong> {update.trans_num}
-                </p>
-                <p>
-                <strong>Fraud:</strong> {update.is_fraud ? 'Yes' : 'No'}
-                </p>
-            </div>
-            ))
-        )}
+            <h1>Realtime Database Updates</h1>
+            <button onClick={insertData} style={{ marginBottom: '20px' }}>
+                Insert Data
+            </button>
+            {updates.length === 0 ? (
+                <p>No updates available yet.</p>
+            ) : (
+                updates.map((update) => (
+                    <div
+                        key={update.trans_num}
+                        style={{
+                            border: '1px solid #ccc',
+                            padding: '10px',
+                            marginBottom: '10px'
+                        }}
+                    >
+                        <p>
+                            <strong>Transaction Date:</strong> {update.trans_date}
+                        </p>
+                        <p>
+                            <strong>Transaction Time:</strong> {update.trans_time}
+                        </p>
+                        <p>
+                            <strong>Merchant:</strong> {update.merchant}
+                        </p>
+                        <p>
+                            <strong>Category:</strong> {update.category}
+                        </p>
+                        <p>
+                            <strong>Amount:</strong> {update.amt}
+                        </p>
+                        <p>
+                            <strong>Credit Card:</strong> {update.cc_num}
+                        </p>
+                        <p>
+                            <strong>User ID:</strong> {update.user_id}
+                        </p>
+                        <p>
+                            <strong>Merchant Location:</strong> {update.merch_lat}, {update.merch_long}
+                        </p>
+                        <p>
+                            <strong>Transaction Number:</strong> {update.trans_num}
+                        </p>
+                        <p>
+                            <strong>Fraud:</strong> {update.is_fraud ? 'Yes' : 'No'}
+                        </p>
+                    </div>
+                ))
+            )}
         </div>
     );
 };
