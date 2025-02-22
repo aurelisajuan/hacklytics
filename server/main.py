@@ -192,12 +192,12 @@ def insert_trans(cc_num: str, merchant: str, category: str, amt: float, merch_la
     
 
 # Run test
-response = insert_trans(
-    cc_num="3502088871723054",  
-    merchant="fraud_Altenwerth-Kilback",
-    category="home",
-    amt=27.12,
-    merch_lat=38.0298,
-    merch_long=-77.0793
-)
-print("Final insert_trans response:", response)
+    # response = insert_trans(
+    #     cc_num="3502088871723054",  
+    #     merchant="fraud_Altenwerth-Kilback",
+    #     category="home",
+    #     amt=27.12,
+    #     merch_lat=38.0298,
+    #     merch_long=-77.0793
+    # )
+    # print("Final insert_trans response:", response)
