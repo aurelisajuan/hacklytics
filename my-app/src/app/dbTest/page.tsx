@@ -49,7 +49,7 @@ const RealtimeUpdates: React.FC = () => {
         setUpdates(data as Transaction[]);
     };
 
-    // Delete all rows from the transaction and customer tables.
+     // Delete all rows from the transaction and customer tables.
     // const clearDatabase = async () => {
     //     const { error: transError } = await supabase
     //     .from('transaction')
@@ -67,11 +67,9 @@ const RealtimeUpdates: React.FC = () => {
     //     }
     // };
 
-    // Bulk upload four customers and 3-5 transactions each.
+  // Bulk upload customers (if not already present) and 3-5 transactions each.
     const uploadBulkData = async () => {
-        // First, clear existing data.
-        // await clearDatabase();
-
+        // await clearPreviewData;
         // Define four new customers.
         const customers: Customer[] = [
         {
@@ -150,24 +148,49 @@ const RealtimeUpdates: React.FC = () => {
         ];
 
         for (const customer of customers) {
-        // Insert customer using upsert based on the "cc" field.
-        const { data: customerData, error: customerError } = await supabase
+        let userId: string | undefined;
+
+        // First, try to fetch an existing customer by credit card number.
+        const { data: existingData, error: selectError } = await supabase
             .from('customer')
-            .upsert(customer, { onConflict: 'cc' })
-            .select();
-        if (customerError) {
-            console.log("Upsert customer error:", customerError);
+            .select('id')
+            .eq('cc', customer.cc)
+            .maybeSingle();
+        
+        if (selectError) {
+            console.log("Error fetching customer:", selectError);
             continue;
         }
-        const userId = customerData[0].id;
+        
+        if (existingData) {
+            // Customer already exists, use its id.
+            userId = existingData.id;
+        } else {
+            // Customer does not exist, insert new record.
+            const { data: customerData, error: customerError } = await supabase
+            .from('customer')
+            .insert(customer)
+            .select();
+            if (customerError) {
+            console.log("Insert customer error:", customerError);
+            continue;
+            }
+            if (customerData && customerData.length > 0) {
+            userId = customerData[0].id;
+            }
+        }
+
+        if (!userId) {
+            console.log("Could not determine user id for", customer.first_name);
+            continue;
+        }
+
+        // Create 3-5 transactions for this customer.
         const numTransactions = Math.floor(Math.random() * 3) + 3;
         const baseTime = new Date();
         for (let i = 0; i < numTransactions; i++) {
-            // Offset each transaction time by i minutes.
             const transTime = new Date(baseTime.getTime() + i * 60000);
-            // Pick a random sample transaction.
             const sample = sampleTransactions[Math.floor(Math.random() * sampleTransactions.length)];
-            // Add a small random offset to customer's location for merchant location.
             const offsetLat = (Math.random() - 0.5) * 0.1;
             const offsetLong = (Math.random() - 0.5) * 0.1;
             const newTransaction: Transaction = {
@@ -252,36 +275,16 @@ const RealtimeUpdates: React.FC = () => {
                 marginBottom: '10px'
                 }}
             >
-                <p>
-                <strong>Transaction Date:</strong> {update.trans_date}
-                </p>
-                <p>
-                <strong>Transaction Time:</strong> {update.trans_time}
-                </p>
-                <p>
-                <strong>Merchant:</strong> {update.merchant}
-                </p>
-                <p>
-                <strong>Category:</strong> {update.category}
-                </p>
-                <p>
-                <strong>Amount:</strong> {update.amt}
-                </p>
-                <p>
-                <strong>Credit Card:</strong> {update.cc_num}
-                </p>
-                <p>
-                <strong>User ID:</strong> {update.user_id}
-                </p>
-                <p>
-                <strong>Merchant Location:</strong> {update.merch_lat}, {update.merch_long}
-                </p>
-                <p>
-                <strong>Transaction Number:</strong> {update.trans_num}
-                </p>
-                <p>
-                <strong>Fraud:</strong> {update.is_fraud ? 'Yes' : 'No'}
-                </p>
+                <p><strong>Transaction Date:</strong> {update.trans_date}</p>
+                <p><strong>Transaction Time:</strong> {update.trans_time}</p>
+                <p><strong>Merchant:</strong> {update.merchant}</p>
+                <p><strong>Category:</strong> {update.category}</p>
+                <p><strong>Amount:</strong> {update.amt}</p>
+                <p><strong>Credit Card:</strong> {update.cc_num}</p>
+                <p><strong>User ID:</strong> {update.user_id}</p>
+                <p><strong>Merchant Location:</strong> {update.merch_lat}, {update.merch_long}</p>
+                <p><strong>Transaction Number:</strong> {update.trans_num}</p>
+                <p><strong>Fraud:</strong> {update.is_fraud ? 'Yes' : 'No'}</p>
             </div>
             ))
         )}
