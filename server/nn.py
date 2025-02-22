@@ -111,3 +111,5 @@ model.fit(X_train_scaled, y_train, epochs=10, batch_size=32, validation_split=0.
 # Evaluate the model on the test data.
 loss, accuracy = model.evaluate(X_test_scaled, y_test)
 print("Test accuracy:", accuracy)
+
+model.save('fraud_model.h5')
