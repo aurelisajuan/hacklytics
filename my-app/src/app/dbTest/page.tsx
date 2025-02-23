@@ -31,22 +31,22 @@ interface Customer {
 }
 
 interface Transaction {
-  merchant: string;
-  category: string;
-  trans_num: string;
-  trans_date: string;
-  trans_time: string;
-  amt: number;
-  merch_lat: number;
-  merch_long: number;
-  is_fraud: string;
-  cc_num: string;
-  user_id: string;
+    merchant: string;
+    category: string;
+    trans_num: string;
+    trans_date: string;
+    trans_time: string;
+    amt: number;
+    merch_lat: number;
+    merch_long: number;
+    is_fraud: string;
+    cc_num: string;
+    user_id: string;
 }
 
 const RealtimeUpdates: React.FC = () => {
-  const [updates, setUpdates] = useState<Transaction[]>([]);
-  const MapHeatmap = dynamic(() => import('../../components/map'), { ssr: false })
+    const [updates, setUpdates] = useState<Transaction[]>([]);
+    const MapHeatmap = dynamic(() => import('../../components/map'), { ssr: false })
 
 
     const fetchTransactions = async () => {
@@ -139,147 +139,147 @@ const RealtimeUpdates: React.FC = () => {
         },
     ];
 
-  const transactionsData = [
-    {
-      cc_num: "3502088871723054",
-      transactions: [
+    const transactionsData = [
         {
-          merchant: "fraud_Altenwerth-Kilback",
-          category: "home",
-          amt: 27.12,
-          merch_lat: 38.0298,
-          merch_long: -77.0793,
+        cc_num: "3502088871723054",
+        transactions: [
+            {
+            merchant: "fraud_Altenwerth-Kilback",
+            category: "home",
+            amt: 27.12,
+            merch_lat: 38.0298,
+            merch_long: -77.0793,
+            },
+            {
+            merchant: "fraud_Osinski Inc",
+            category: "personal_care",
+            amt: 23.33,
+            merch_lat: 39.0298,
+            merch_long: -77.0793,
+            },
+            {
+            merchant: "fraud_Hills-Witting",
+            category: "shopping_net",
+            amt: 59.46,
+            merch_lat: 39.0298,
+            merch_long: -77.0793,
+            },
+        ],
         },
         {
-          merchant: "fraud_Osinski Inc",
-          category: "personal_care",
-          amt: 23.33,
-          merch_lat: 39.0298,
-          merch_long: -77.0793,
+        cc_num: "3534330126107879",
+        transactions: [
+            {
+            merchant: "fraud_Ernser-Feest",
+            category: "home",
+            amt: 69.11,
+            merch_lat: 45.783381,
+            merch_long: -108.264676,
+            },
+            {
+            merchant: "fraud_Dibbert-Green",
+            category: "entertainment",
+            amt: 81.76,
+            merch_lat: 45.935636,
+            merch_long: -108.105437,
+            },
+            {
+            merchant: "fraud_Bahringer, Bergnaum and Quitzon",
+            category: "home",
+            amt: 75.63,
+            merch_lat: 45.935636,
+            merch_long: -108.105437,
+            },
+        ],
         },
         {
-          merchant: "fraud_Hills-Witting",
-          category: "shopping_net",
-          amt: 59.46,
-          merch_lat: 39.0298,
-          merch_long: -77.0793,
-        },
-      ],
-    },
-    {
-      cc_num: "3534330126107879",
-      transactions: [
-        {
-          merchant: "fraud_Ernser-Feest",
-          category: "home",
-          amt: 69.11,
-          merch_lat: 45.783381,
-          merch_long: -108.264676,
-        },
-        {
-          merchant: "fraud_Dibbert-Green",
-          category: "entertainment",
-          amt: 81.76,
-          merch_lat: 45.935636,
-          merch_long: -108.105437,
-        },
-        {
-          merchant: "fraud_Bahringer, Bergnaum and Quitzon",
-          category: "home",
-          amt: 75.63,
-          merch_lat: 45.935636,
-          merch_long: -108.105437,
-        },
-      ],
-    },
-    {
-      cc_num: "6538441737335434", 
-      transactions: [
-        {
-          merchant: "fraud_Prosacco LLC",
-          category: "personal_care",
-          amt: 5.71,
-          merch_lat: 41.3851,
-          merch_long: -80.1752,
+        cc_num: "6538441737335434", 
+        transactions: [
+            {
+            merchant: "fraud_Prosacco LLC",
+            category: "personal_care",
+            amt: 5.71,
+            merch_lat: 41.3851,
+            merch_long: -80.1752,
+            },
+            {
+            merchant: "fraud_Upton PLC",
+            category: "entertainment",
+            amt: 48.05,
+            merch_lat: 41.3851,
+            merch_long: -80.1752,
+            },
+            {
+            merchant: "fraud_Little, Gutmann and Lynch",
+            category: "shopping_net",
+            amt: 28.94,
+            merch_lat: 41.3851,
+            merch_long: -80.1752,
+            },
+        ],
         },
         {
-          merchant: "fraud_Upton PLC",
-          category: "entertainment",
-          amt: 48.05,
-          merch_lat: 41.3851,
-          merch_long: -80.1752,
+        cc_num: "4586810168620942",
+        transactions: [
+            {
+            merchant: "fraud_Keeling-Crist",
+            category: "misc_pos",
+            amt: 81.78,
+            merch_lat: 32.5486,
+            merch_long: -80.307,
+            },
+            {
+            merchant: "fraud_Witting, Beer and Ernser",
+            category: "home",
+            amt: 148.12,
+            merch_lat: 32.5486,
+            merch_long: -80.307,
+            },
+            {
+            merchant: "fraud_Lynch-Wisozk",
+            category: "home",
+            amt: 16.88,
+            merch_lat: 32.5486,
+            merch_long: -80.307,
+            },
+        ],
         },
-        {
-          merchant: "fraud_Little, Gutmann and Lynch",
-          category: "shopping_net",
-          amt: 28.94,
-          merch_lat: 41.3851,
-          merch_long: -80.1752,
-        },
-      ],
-    },
-    {
-      cc_num: "4586810168620942",
-      transactions: [
-        {
-          merchant: "fraud_Keeling-Crist",
-          category: "misc_pos",
-          amt: 81.78,
-          merch_lat: 32.5486,
-          merch_long: -80.307,
-        },
-        {
-          merchant: "fraud_Witting, Beer and Ernser",
-          category: "home",
-          amt: 148.12,
-          merch_lat: 32.5486,
-          merch_long: -80.307,
-        },
-        {
-          merchant: "fraud_Lynch-Wisozk",
-          category: "home",
-          amt: 16.88,
-          merch_lat: 32.5486,
-          merch_long: -80.307,
-        },
-      ],
-    },
-  ];
+    ];
 
-  const fetchTransactions = async () => {
-    const { data, error } = await supabase.from("transaction").select("*");
-    if (error) {
-      console.error("Fetch transactions error:", error);
-      return;
-    }
-    setUpdates(data as Transaction[]);
-  };
-
-  const uploadBulkData = async () => {
-    // Insert Customers First
-    for (const customer of customers) {
-      const { data: existingCustomer, error: customerFetchError } =
-        await supabase
-          .from("customer")
-          .select("*")
-          .eq("cc", customer.cc)
-          .maybeSingle();
-
-      if (customerFetchError) {
-        console.error("Error fetching customer:", customerFetchError);
-        continue;
-      }
-
-      if (!existingCustomer) {
-        const { error: customerInsertError } = await supabase
-          .from("customer")
-          .insert([customer]);
-        if (customerInsertError) {
-          console.error("Error inserting customer:", customerInsertError);
-          continue;
+    const fetchTransactions = async () => {
+        const { data, error } = await supabase.from("transaction").select("*");
+        if (error) {
+        console.error("Fetch transactions error:", error);
+        return;
         }
-      }
-    }
+        setUpdates(data as Transaction[]);
+    };
+
+    const uploadBulkData = async () => {
+        // Insert Customers First
+        for (const customer of customers) {
+        const { data: existingCustomer, error: customerFetchError } =
+            await supabase
+            .from("customer")
+            .select("*")
+            .eq("cc", customer.cc)
+            .maybeSingle();
+
+        if (customerFetchError) {
+            console.error("Error fetching customer:", customerFetchError);
+            continue;
+        }
+
+        if (!existingCustomer) {
+            const { error: customerInsertError } = await supabase
+            .from("customer")
+            .insert([customer]);
+            if (customerInsertError) {
+            console.error("Error inserting customer:", customerInsertError);
+            continue;
+            }
+        }
+        }
 
     // Wait for Customers to be Inserted Before Transactions
     await new Promise((resolve) => setTimeout(resolve, 3000));
@@ -347,79 +347,79 @@ const RealtimeUpdates: React.FC = () => {
         fetchTransactions();
     };
 
-  useEffect(() => {
-    fetchTransactions();
-  }, []);
+    useEffect(() => {
+        fetchTransactions();
+    }, []);
 
-  useEffect(() => {
-    const channel = supabase
-      .channel("hacklytics")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "transaction",
-        },
-        (payload) => {
-          console.log("Realtime update received:", payload);
-          const newUpdate = payload.new as Transaction;
-          setUpdates((prev: Transaction[]) => {
-            if (
-              prev.find((update) => update.trans_num === newUpdate.trans_num)
-            ) {
-              return prev;
+    useEffect(() => {
+        const channel = supabase
+        .channel("hacklytics")
+        .on(
+            "postgres_changes",
+            {
+            event: "*",
+            schema: "public",
+            table: "transaction",
+            },
+            (payload) => {
+            console.log("Realtime update received:", payload);
+            const newUpdate = payload.new as Transaction;
+            setUpdates((prev: Transaction[]) => {
+                if (
+                prev.find((update) => update.trans_num === newUpdate.trans_num)
+                ) {
+                return prev;
+                }
+                return [...prev, newUpdate];
+            });
             }
-            return [...prev, newUpdate];
-          });
-        }
-      )
-      .subscribe();
+        )
+        .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
+        return () => {
+        supabase.removeChannel(channel);
+        };
+    }, []);
 
-  return (
-    <div className="grid grid-cols-1 gap-4 p-10">
-      <h1>Realtime Database Updates</h1>
-      <div className="flex gap-4">
-        <button
-          onClick={uploadBulkData}
-          className="px-4 py-2 m-5 font-bold text-white bg-green-500 rounded hover:bg-green-700"
-        >
-          Upload Bulk Data
-        </button>
-      </div>
-      {updates.length === 0 ? (
-        <p>No updates available yet.</p>
-      ) : (
-        updates.map((update) => (
-          <div key={update.trans_num} className="p-4 mb-4 border">
-            <p>
-              <strong>Transaction Date:</strong> {update.trans_date}
-            </p>
-            <p>
-              <strong>Transaction Time:</strong> {update.trans_time}
-            </p>
-            <p>
-              <strong>Merchant:</strong> {update.merchant}
-            </p>
-            <p>
-              <strong>Category:</strong> {update.category}
-            </p>
-            <p>
-              <strong>Amount:</strong> {update.amt}
-            </p>
-            <p>
-              <strong>Fraud Status:</strong> {update.is_fraud}
-            </p>
-          </div>
-        ))
-      )}
-    </div>
-  );
+    return (
+        <div className="grid grid-cols-1 gap-4 p-10">
+        <h1>Realtime Database Updates</h1>
+        <div className="flex gap-4">
+            <button
+            onClick={uploadBulkData}
+            className="px-4 py-2 m-5 font-bold text-white bg-green-500 rounded hover:bg-green-700"
+            >
+            Upload Bulk Data
+            </button>
+        </div>
+        {updates.length === 0 ? (
+            <p>No updates available yet.</p>
+        ) : (
+            updates.map((update) => (
+            <div key={update.trans_num} className="p-4 mb-4 border">
+                <p>
+                <strong>Transaction Date:</strong> {update.trans_date}
+                </p>
+                <p>
+                <strong>Transaction Time:</strong> {update.trans_time}
+                </p>
+                <p>
+                <strong>Merchant:</strong> {update.merchant}
+                </p>
+                <p>
+                <strong>Category:</strong> {update.category}
+                </p>
+                <p>
+                <strong>Amount:</strong> {update.amt}
+                </p>
+                <p>
+                <strong>Fraud Status:</strong> {update.is_fraud}
+                </p>
+            </div>
+            ))
+        )}
+        </div>
+    );
 }
 
 export default RealtimeUpdates;

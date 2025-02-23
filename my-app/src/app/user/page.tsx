@@ -7,6 +7,9 @@ import {
   SearchIcon,
   Settings,
   UserCircle,
+  LockIcon,
+  UnlockIcon,
+  ClockIcon,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -43,6 +46,21 @@ interface Customer {
   is_locked: string;
 }
 
+// Define the Transaction interface
+interface Transaction {
+  merchant: string;
+  category: string;
+  trans_num: string;
+  trans_date: string;
+  trans_time: string;
+  amt: number;
+  merch_lat: number;
+  merch_long: number;
+  is_fraud: string;
+  cc_num: string;
+  user_id: string;
+}
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
@@ -62,7 +80,7 @@ function Sidebar({
         <div className="flex items-center gap-3">
           {/* Logo Image */}
           <Image
-            src="/logo.png" // Ensure your logo file is in the /public folder
+            src="/logo.png"
             alt="Banklytics Logo"
             width={40}
             height={40}
@@ -118,13 +136,16 @@ export default function DashboardPage() {
   // Initialize active link as "user-profiles" so the User Profiles nav item is highlighted on page load.
   const [activeLink, setActiveLink] = useState("user-profiles");
   const [customer, setCustomer] = useState<Customer | null>(null);
+  const [recentTransaction, setRecentTransaction] = useState<Transaction | null>(null);
 
+  // Fetch the customer record for Lisa Lin
   useEffect(() => {
     async function fetchCustomer() {
       const { data, error } = await supabase
         .from("customer")
         .select("*")
-        .limit(1)
+        .eq("first_name", "Lisa")
+        .eq("last_name", "Lin")
         .single();
       if (error) {
         console.error("Error fetching customer data:", error);
@@ -134,6 +155,26 @@ export default function DashboardPage() {
     }
     fetchCustomer();
   }, []);
+
+  // Fetch the most recent transaction for the customer based on the credit card number (cc)
+  useEffect(() => {
+    async function fetchTransaction() {
+      if (!customer) return;
+      const { data, error } = await supabase
+        .from("transaction")
+        .select("*")
+        .eq("cc_num", customer.cc)
+        .order("trans_date", { ascending: false })
+        .limit(1)
+        .single();
+      if (error) {
+        console.error("Error fetching transaction data:", error);
+        return;
+      }
+      setRecentTransaction(data);
+    }
+    fetchTransaction();
+  }, [customer]);
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
@@ -181,9 +222,7 @@ export default function DashboardPage() {
                   <CardContent className="p-6">
                     <div className="space-y-6">
                       <div>
-                        <div className="text-sm text-muted-foreground">
-                          Name
-                        </div>
+                        <div className="text-sm text-muted-foreground">Name</div>
                         <div className="text-2xl font-bold">
                           {customer
                             ? `${customer.first_name} ${customer.last_name}`
@@ -192,26 +231,16 @@ export default function DashboardPage() {
                       </div>
                       <div className="grid gap-4 md:grid-cols-2">
                         <div>
-                          <div className="text-sm text-muted-foreground">
-                            Date of Birth
-                          </div>
-                          <div>
-                            {customer ? customer.dob : "YYYY-MM-DD"}
-                          </div>
+                          <div className="text-sm text-muted-foreground">Date of Birth</div>
+                          <div>{customer ? customer.dob : "YYYY-MM-DD"}</div>
                         </div>
                         <div>
-                          <div className="text-sm text-muted-foreground">
-                            Occupation
-                          </div>
-                          <div>
-                            {customer ? customer.job : "Occupation"}
-                          </div>
+                          <div className="text-sm text-muted-foreground">Occupation</div>
+                          <div>{customer ? customer.job : "Occupation"}</div>
                         </div>
                       </div>
                       <div>
-                        <div className="text-sm text-muted-foreground">
-                          Address
-                        </div>
+                        <div className="text-sm text-muted-foreground">Address</div>
                         <div>{customer ? customer.street : "Street Name"}</div>
                         <div>{customer ? customer.city : "City"}</div>
                         <div>
@@ -261,25 +290,56 @@ export default function DashboardPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="grid gap-6 md:grid-cols-2">
-                      <div className="aspect-video w-96 rounded-xl bg-gradient-to-br from-gray-200 to-gray-300" />
+                      <div className="aspect-video w-80 rounded-xl bg-gradient-to-br from-gray-200 to-gray-300" />
                       <div>
-                        <div className="mb-2 text-lg font-medium">
-                          Recent transactions
+                        {/* Card Status aligned to the right */}
+                        <div className="text-right mb-4">
+                          <span className="text-sm text-muted-foreground">
+                            Card Status:{" "}
+                          </span>
+                          <span className="font-bold flex items-center justify-end gap-2">
+                            {customer ? (
+                              customer.is_locked.toLowerCase() === "true" ? (
+                                <>
+                                  <LockIcon className="h-4 w-4 text-red-500" />
+                                  Locked
+                                </>
+                              ) : (
+                                <>
+                                  <UnlockIcon className="h-4 w-4 text-green-500" />
+                                  Unlocked
+                                </>
+                              )
+                            ) : (
+                              "Loading..."
+                            )}
+                          </span>
                         </div>
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <div>store</div>
-                            <div className="text-sm text-muted-foreground">
-                              location
+
+                        <div className="mb-2 text-lg font-medium">Recent transactions</div>
+                        {recentTransaction ? (
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div>{recentTransaction.merchant}</div>
+                              <div className="text-sm text-muted-foreground">
+                                {recentTransaction.category}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-red-500">
+                                -${recentTransaction.amt.toFixed(2)}
+                              </div>
+                              <div className="text-sm text-red-500">
+                                Risk:{" "}
+                                {recentTransaction.is_fraud.toLowerCase() === "true"
+                                  ? "high"
+                                  : "low"}
+                              </div>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <div className="text-red-500">-$3.56</div>
-                            <div className="text-sm text-red-500">
-                              Risk: high
-                            </div>
-                          </div>
-                        </div>
+                        ) : (
+                          <p>Loading transaction...</p>
+                        )}
                       </div>
                     </div>
                   </CardContent>
@@ -288,7 +348,7 @@ export default function DashboardPage() {
 
               {/* Live Transcript */}
               <aside className="w-full border-l p-6">
-                <div className="space-y-4">
+                <div className="space-y-2">
                   <h2 className="text-lg font-semibold">Live Transcript</h2>
                   <div className="flex items-center gap-4">
                     <div className="h-10 w-10 rounded-full bg-muted" />
