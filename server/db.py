@@ -217,13 +217,13 @@ async def get_cust(cc_num: str):
 # print("Get customer result:", result)
 
 
-async def set_locked(cc: str, is_locked: bool):
+async def set_locked(cc: str, is_locked: str):
     """
     Set the locked status for a customer in the database.
 
     Parameters:
-        cc_num (str): The credit card number of the customer.
-        is_locked (bool): The desired locked status.
+        cc (str): The credit card number of the customer.
+        is_locked (str): The desired locked status ("no", "yes", or "pending").
 
     Returns:
         dict: Outcome of the update operation, e.g.,
@@ -236,6 +236,12 @@ async def set_locked(cc: str, is_locked: bool):
                 "error": "No customer found with cc 1234 to update."
             }
     """
+    valid_states = {"no", "yes", "pending"}
+    if is_locked not in valid_states:
+        error_message = f"Invalid state for is_locked: {is_locked}. Must be one of {valid_states}"
+        print(error_message)
+        return {"error": error_message}
+    
     try:
         response = (
             await supabase.table("customer")
