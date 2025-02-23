@@ -11,7 +11,7 @@ SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 
-def insert_trans(
+async def insert_trans(
     cc_num: str,
     merchant: str,
     category: str,
@@ -36,13 +36,16 @@ def insert_trans(
     """
     try:
         print("Checking for customer with cc_num:", cc_num)
-        customer_query = (
-            supabase.table("customer")
-            .select("*")
-            .eq("cc", cc_num)
-            .maybe_single()
-            .execute()
-        )
+        # customer_query = (
+        #     supabase.table("customer")
+        #     .select("*")
+        #     .eq("cc", cc_num)
+        #     .maybe_single()
+        #     .execute()
+        # )
+
+        customer_query = await supabase.table("customer").select("*").eq("cc", cc_num).maybe_single().execute()
+
         print("Customer query response:", customer_query)
         customer = customer_query.data
 
@@ -71,9 +74,11 @@ def insert_trans(
         }
         print("Inserting new transaction:", new_transaction)
 
-        insert_response = (
-            supabase.table("transactions").insert(new_transaction).execute()
-        )
+        # insert_response = (
+        #     supabase.table("transactions").insert(new_transaction).execute()
+        # )
+
+        insert_response = await supabase.table("transactions").insert(new_transaction).execute()
 
         response_data = insert_response.get("data")
         if not response_data:
@@ -110,7 +115,7 @@ def insert_trans(
 # print("Final insert_trans response:", response)
 
 
-def update_trans(trans_num: str, updated_fields: dict) -> dict:
+async def update_trans(trans_num: str, updated_fields: dict) -> dict:
     """
     Update one or more fields in a transaction row by matching on `trans_num`.
 
@@ -131,12 +136,13 @@ def update_trans(trans_num: str, updated_fields: dict) -> dict:
             }
     """
     try:
-        response = (
-            supabase.table("transaction")
-            .update(updated_fields)
-            .eq("trans_num", trans_num)
-            .execute()
-        )
+        # response = (
+        #     supabase.table("transaction")
+        #     .update(updated_fields)
+        #     .eq("trans_num", trans_num)
+        #     .execute()
+        # )
+        response = await supabase.table("transaction").update(updated_fields).eq("trans_num", trans_num).execute()
 
         # updated_rows = response.get("data", [])
         updated_rows = response.data or []
@@ -157,43 +163,33 @@ def update_trans(trans_num: str, updated_fields: dict) -> dict:
 
 # print("Update result:", result)
 
-
-def get_cust ( cc_num: str ) -> dict:
+async def get_customer(cc_num: str):
     """
-    Get a customer by credit card number.
+    Retrieves customer details from the Supabase database.
 
-    Args:
-        cc_num (str): The credit card number to search for.
+    Parameters:
+        cc_num (str): The credit card number of the customer.
 
     Returns:
-        dict: A dict describing the outcome, e.g.:
-            {
-                "success": "Found 1 customer.",
-                "data": [ { ...customer row... } ]
-            }
-            or
-            {
-                "error": "No customer found with credit card number: ..."
-            }
+        dict: Customer details or an error message if not found.
     """
     try:
-        response = (
-            supabase.table("customer")
-            .select("*")
-            .eq("cc", cc_num)
-            .execute()
-        )
+        # Query the customer table to get customer details
+        # customer_query = supabase.table("customer").select("*").eq("cc", cc_num).maybe_single().execute()
+        customer_query = await supabase.table("customer").select("*").eq("cc", cc_num).maybe_single().execute()
 
-        customers = response.data or []
+        customer = customer_query.data
 
-        if not customers:
-            return {"error": f"No customer found with credit card number: {cc_num}"}
+        if not customer:
+            print(f"Customer with CC {cc_num} not found.")
+            return {"error": "Customer not found", "cc_num": cc_num}
 
-        return {"success": f"Found {len(customers)} customer.", "data": customers}
+        print(f"Customer found: {customer}")
+        return {"success": True, "customer": customer}
 
     except Exception as e:
-        return {"error": f"Exception while getting customer by cc_num {cc_num}: {e}"}
-    
+        print(f"Unexpected error while retrieving customer: {e}")
+        return {"error": "Internal server error", "details": str(e)}
 
 # result = get_cust("3502088871723054")
 # print("Get customer result:", result)
