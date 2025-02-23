@@ -193,3 +193,40 @@ async def get_customer(cc_num: str):
 
 # result = get_cust("3502088871723054")
 # print("Get customer result:", result)
+
+async def set_locked(cc_num: str, is_locked: bool):
+    """
+    Set the locked status for a customer in the database.
+
+    Parameters:
+        cc_num (str): The credit card number of the customer.
+        is_locked (bool): The desired locked status.
+
+    Returns:
+        dict: Outcome of the update operation, e.g.,
+            {
+                "success": "Updated locked status for customer with cc 1234.",
+                "data": [ { ...updated customer row... } ]
+            }
+            or
+            {
+                "error": "No customer found with cc 1234 to update."
+            }
+    """
+    try:
+        response = await supabase.table("customer").update({"locked": is_locked}).eq("cc", cc_num).execute()
+        updated_rows = response.data or []
+
+        if not updated_rows:
+            error_message = f"No customer found with cc {cc_num} to update."
+            print(error_message)
+            return {"error": error_message}
+
+        success_message = f"Updated locked status for customer with cc {cc_num}."
+        print(success_message)
+        return {"success": success_message, "data": updated_rows}
+
+    except Exception as e:
+        error_message = f"Exception while setting locked status for cc {cc_num}: {e}"
+        print(error_message)
+        return {"error": error_message}
