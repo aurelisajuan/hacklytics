@@ -4,7 +4,6 @@ import csv
 import asyncio
 from datetime import datetime
 from supabase import create_async_client, AsyncClient
-import supabase
 from dotenv import load_dotenv
 
 load_dotenv(override=True)
@@ -214,6 +213,7 @@ async def set_locked(cc: str, is_locked: str):
             }
     """
     valid_states = {"no", "yes", "pending high", "pending low"}
+    print("BALLS ")
     if is_locked not in valid_states:
         error_message = (
             f"Invalid state for is_locked: {is_locked}. Must be one of {valid_states}"
@@ -246,6 +246,7 @@ async def set_locked(cc: str, is_locked: str):
         return {"error": error_message}
 
 
+
 async def reset_db() -> dict:
     """
     Reset the database by clearing the 'transactions' table
@@ -271,7 +272,7 @@ async def reset_db() -> dict:
         # Load data from base.csv
         print("Loading data from base.csv...")
         with open(
-            "./sample_data/base.csv", mode="r", newline=""
+            "./experiments/sample_data/base.csv", mode="r", newline=""
         ) as csvfile:
             reader = csv.DictReader(csvfile)
             # Print CSV schema (the header field names)
