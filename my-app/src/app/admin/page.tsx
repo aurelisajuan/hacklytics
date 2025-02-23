@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Bell, Home, Search, Settings, User2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -29,6 +29,11 @@ import {
   LineElement,
   PointElement,
 } from "chart.js";
+import {
+  GoogleMap,
+  useJsApiLoader,
+  HeatmapLayer,
+} from "@react-google-maps/api";
 
 ChartJS.register(
   ArcElement,
@@ -155,6 +160,74 @@ const TransactionBreakdownChart = () => {
           <p>Loading chart data...</p>
         )}
       </div>
+    </div>
+  );
+};
+
+//Geospatial Heat Map
+const containerStyle = {
+  width: "100%",
+  height: "500px",
+};
+
+const center = {
+  lat: 51.505,
+  lng: -0.09,
+};
+
+const GoogleHeatMap = () => {
+  const { isLoaded, loadError } = useJsApiLoader({
+    id: "google-map-script",
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
+    libraries: ["visualization"],
+  });
+
+  const [map, setMap] = useState<google.maps.Map | null>(null);
+
+  const onLoad = useCallback((map: google.maps.Map) => {
+    setMap(map);
+  }, []);
+
+  const onUnmount = useCallback(() => {
+    setMap(null);
+  }, []);
+
+  // Sample heatmap data
+  const heatmapData = [
+    { lat: 51.505, lng: -0.09, weight: 1 },
+    { lat: 51.51, lng: -0.1, weight: 0.5 },
+    { lat: 51.51, lng: -0.12, weight: 0.8 },
+    { lat: 51.52, lng: -0.11, weight: 0.6 },
+    { lat: 51.53, lng: -0.1, weight: 0.3 },
+  ];
+
+  if (loadError) {
+    return <div>Error loading maps</div>;
+  }
+
+  if (!isLoaded) {
+    return <div>Loading maps</div>;
+  }
+
+  return (
+    <div className="w-full h-[500px]">
+      <GoogleMap
+        mapContainerStyle={containerStyle}
+        center={center}
+        zoom={13}
+        onLoad={onLoad}
+        onUnmount={onUnmount}
+      >
+        <HeatmapLayer
+          data={heatmapData.map(
+            (point) => new google.maps.LatLng(point.lat, point.lng)
+          )}
+          options={{
+            radius: 20,
+            opacity: 0.6,
+          }}
+        />
+      </GoogleMap>
     </div>
   );
 };
@@ -560,33 +633,23 @@ export default function Dashboard() {
             <div className="grid gap-6 md:grid-cols-3">
               <Card className="rounded-lg border-r shadow-sm md:col-span-2">
                 <CardHeader className="border-b bg-white px-6">
-                  <CardTitle>User Demographics</CardTitle>
+                  <CardTitle>Geospatial Heat Map</CardTitle>
                 </CardHeader>
                 <CardContent className="p-6 border-r">
-                  <div className="h-[300px] rounded-lg bg-gray-50" />
+                  <GoogleHeatMap />
                 </CardContent>
               </Card>
               <Card className="rounded-lg border-r shadow-sm">
                 <CardHeader className="border-b bg-white px-6">
-                  <CardTitle>Top User Locations</CardTitle>
-                </CardHeader>
-                <CardContent className="p-6 border-r">
-                  <div className="h-[300px] rounded-lg bg-gray-50" />
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* New Risk & Volume Charts */}
-            <div className="mt-6 grid gap-6 md:grid-cols-2">
-              <Card className="rounded-lg border-r shadow-sm">
-                <CardHeader className="border-b bg-white px-6">
-                  <CardTitle>Live Risk Trend</CardTitle>
+                  <CardTitle>Live Risk Trend Line Graph</CardTitle>
                 </CardHeader>
                 <CardContent className="p-6 border-r">
                   <LiveRiskTrendLineChart />
                 </CardContent>
               </Card>
             </div>
+
+            {/* New Risk & Volume Charts */}
             <div className="mt-6 grid gap-6 md:grid-cols-2">
               <Card className="rounded-lg border-r shadow-sm">
                 <CardHeader className="border-b bg-white px-6">
