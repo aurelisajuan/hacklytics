@@ -193,3 +193,7 @@ def get_cust ( cc_num: str ) -> dict:
 
     except Exception as e:
         return {"error": f"Exception while getting customer by cc_num {cc_num}: {e}"}
+    
+
+# result = get_cust("3502088871723054")
+# print("Get customer result:", result)
