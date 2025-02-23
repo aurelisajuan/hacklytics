@@ -18,7 +18,7 @@ from llm import LlmClient
 from supabase import create_client, Client
 from datetime import datetime
 
-from db import insert_trans, update_trans
+from db import insert_trans, update_trans, get_cust
 
 load_dotenv(override=True)
 app = FastAPI()
@@ -70,8 +70,8 @@ async def get_transaction(request: Request):
         elif mode < 0.7:
             # Low Fraud
 
-            # Here insert transaaction into db with fraud pending
-            insert_trans(
+            # Here insert transaction into db with fraud pending
+            data = insert_trans(
                 data.get("cc_num"),
                 data.get("merchant"),
                 data.get("category"),
@@ -80,8 +80,20 @@ async def get_transaction(request: Request):
                 data.get("merch_long"),
                 "pending",
             )
-            
-            
+
+            customer = get_cust(data.get("cc_num"))
+            transaction_details = data.get("data")
+
+            retell.call.create_phone_call(
+                from_number="+13192504307",
+                to_number="+19095725988",
+                metadata={
+                    "mode": 0,
+                    "transaction_details": transaction_details,
+                    "user_details": customer,
+                },
+            )
+
             # Call the user to confirm fraud
             return JSONResponse(
                 status_code=200,
@@ -100,6 +112,20 @@ async def get_transaction(request: Request):
                 data.get("merch_long"),
                 "pending",
             )
+
+            customer = get_cust(data.get("cc_num"))
+            transaction_details = data.get("data")
+
+            retell.call.create_phone_call(
+                from_number="+13192504307",
+                to_number="+19095725988",
+                metadata={
+                    "mode": 1,
+                    "transaction_details": transaction_details,
+                    "user_details": customer,
+                },
+            )
+
             # Call the user to confirm fraud
             return JSONResponse(
                 status_code=200,

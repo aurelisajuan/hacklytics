@@ -19,7 +19,7 @@ def insert_trans(
     merch_lat: float,
     merch_long: float,
     is_fraud: str,
-):
+) -> dict:
     """
     Insert a transaction into the database.
 
@@ -158,7 +158,7 @@ def update_trans(trans_num: str, updated_fields: dict) -> dict:
 # print("Update result:", result)
 
 
-def get_cust ( cc_num: str ) -> dict:
+def get_cust(cc_num: str) -> dict:
     """
     Get a customer by credit card number.
 
@@ -168,8 +168,8 @@ def get_cust ( cc_num: str ) -> dict:
     Returns:
         dict: A dict describing the outcome, e.g.:
             {
-                "success": "Found 1 customer.",
-                "data": [ { ...customer row... } ]
+                "success": "Found customer.",
+                "data": { ...customer row... }
             }
             or
             {
@@ -178,22 +178,19 @@ def get_cust ( cc_num: str ) -> dict:
     """
     try:
         response = (
-            supabase.table("customer")
-            .select("*")
-            .eq("cc", cc_num)
-            .execute()
+            supabase.table("customer").select("*").eq("cc", cc_num).limit(1).execute()
         )
 
-        customers = response.data or []
+        customer = response.data[0] if response.data else None
 
-        if not customers:
+        if not customer:
             return {"error": f"No customer found with credit card number: {cc_num}"}
 
-        return {"success": f"Found {len(customers)} customer.", "data": customers}
+        return {"success": "Found customer.", "data": customer}
 
     except Exception as e:
         return {"error": f"Exception while getting customer by cc_num {cc_num}: {e}"}
-    
+
 
 # result = get_cust("3502088871723054")
 # print("Get customer result:", result)
