@@ -18,19 +18,19 @@ import dynamic from 'next/dynamic'
 
 
 interface Customer {
-  first_name: string;
-  last_name: string;
-  cc: string;
-  street: string;
-  city: string;
-  state: string;
-  zip: number;
-  lat: number;
-  long: number;
-  job: string;
-  dob: string;
-  gender: string;
-  is_locked: boolean;
+    first_name: string;
+    last_name: string;
+    cc: string;
+    street: string;
+    city: string;
+    state: string;
+    zip: number;
+    lat: number;
+    long: number;
+    job: string;
+    dob: string;
+    gender: string;
+    is_locked: string;
 }
 
 interface Transaction {
@@ -278,14 +278,68 @@ const RealtimeUpdates: React.FC = () => {
     // Wait for Customers to be Inserted Before Transactions
     await new Promise((resolve) => setTimeout(resolve, 3000));
 
-    // Insert Transactions
-    for (const user of transactionsData) {
-      // Ensure customer exists before inserting transaction
-      const { data: customerExists } = await supabase
-        .from("customer")
-        .select("id, cc")
-        .eq("cc", user.cc_num)
-        .maybeSingle();
+    const customers: Customer[] = [
+        {
+            first_name: "Bill",
+            last_name: "Zhang",
+            cc: "3502088871723054",
+            street: "123 San Jose Ave",
+            city: "San Jose",
+            state: "CA",
+            zip: 95112,
+            lat: 37.3382,
+            long: -121.8863,
+            job: "AI Engineer",
+            dob: "2002-09-27",
+            gender: "M",
+            is_locked: "no",
+        },
+        {
+            first_name: "Warren",
+            last_name: "Yun",
+            cc: "3534330126107879",
+            street: "456 Boston Rd",
+            city: "Boston",
+            state: "MA",
+            zip: 92118,
+            lat: 42.3601,
+            long: -71.0589,
+            job: "Robotic Engineer",
+            dob: "2006-03-06",
+            gender: "M",
+            is_locked: "no",
+        },
+        {
+            first_name: "Lia",
+            last_name: "Lin",
+            cc: "6538441737335434",
+            street: "789 Los Angeles St",
+            city: "Los Angeles",
+            state: "CA",
+            zip: 90001,
+            lat: 34.0522,
+            long: -118.2437,
+            job: "Software Engineer",
+            dob: "2004-05-24",
+            gender: "F",
+            is_locked: "no",
+        },
+        {
+            first_name: "Lisa",
+            last_name: "Lin",
+            cc: "4586810168620942",
+            street: "321 Irvine Blvd",
+            city: "Irvine",
+            state: "CA",
+            zip: 92618,
+            lat: 33.6839,
+            long: -117.7947,
+            job: "Frontend Engineer",
+            dob: "2004-05-24",
+            gender: "F",
+            is_locked: "no",
+        },
+    ];
 
       if (!customerExists) {
         console.error(

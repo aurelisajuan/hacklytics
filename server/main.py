@@ -1,6 +1,4 @@
-import json
 import os
-import uuid
 import asyncio
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
@@ -12,11 +10,8 @@ from custom_types import (
     ConfigResponse,
     ResponseRequiredRequest,
 )
-from typing import Optional
-from socket_manager import manager
 from llm import LlmClient
 from supabase import create_client, Client
-from datetime import datetime
 
 from db import insert_trans, set_locked, get_cust
 
@@ -85,7 +80,7 @@ async def get_transaction(request: Request):
             transaction_details = data.get("data")
 
             # Set user locked status to false
-            await set_locked(data.get("cc_num"), True)
+            await set_locked(data.get("cc_num"), "pending low")
 
             retell.call.create_phone_call(
                 from_number="+13192504307",
@@ -120,7 +115,7 @@ async def get_transaction(request: Request):
             transaction_details = data.get("data")
 
             # Set user locked status to true
-            await set_locked(data.get("cc_num"), True)
+            await set_locked(data.get("cc_num"), "pending high")
 
             retell.call.create_phone_call(
                 from_number="+13192504307",

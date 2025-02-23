@@ -17,6 +17,29 @@ import {
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { createClient } from "@supabase/supabase-js";
+import { Pie, Line, Bar, Doughnut } from "react-chartjs-2";
+import {
+  Chart as ChartJS,
+  ArcElement,
+  Tooltip,
+  Legend,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  LineElement,
+  PointElement,
+} from "chart.js";
+
+ChartJS.register(
+  ArcElement,
+  Tooltip,
+  Legend,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  LineElement,
+  PointElement
+);
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_KEY || "";
@@ -29,6 +52,7 @@ type Transaction = {
   trans_date: string;
   trans_time: string;
   amt: number;
+  risk_score: number; // ensure this exists in your database
   merch_lat: number;
   merch_long: number;
   is_fraud: string;
@@ -36,7 +60,319 @@ type Transaction = {
   user_id: string;
 };
 
-// Sidebar Component: Combines Banklytics branding and navigation
+// Transaction Breakdown Pie Chart Component (existing)
+const TransactionBreakdownChart = () => {
+  const [segmentation, setSegmentation] = useState("category");
+  const [chartData, setChartData] = useState<any>(null);
+
+  useEffect(() => {
+    async function fetchTransactions() {
+      const selectColumns =
+        segmentation === "category"
+          ? "category, amt"
+          : segmentation === "state"
+          ? "state, amt"
+          : segmentation === "city"
+          ? "city, amt"
+          : "category, amt";
+
+      const { data, error } = await supabase
+        .from("transaction")
+        .select(selectColumns);
+
+        if (error) {
+          console.log(error);
+          return;
+        }
+
+      const totals: { [key: string]: number } = {};
+      data?.forEach((tx: any) => {
+        const key = tx[segmentation] || "Unknown";
+        totals[key] = (totals[key] || 0) + tx.amt;
+      });
+
+      const labels = Object.keys(totals);
+      const amounts = Object.values(totals);
+      setChartData({
+        labels,
+        datasets: [
+          {
+            data: amounts,
+            backgroundColor: [
+              "#FF6384",
+              "#36A2EB",
+              "#FFCE56",
+              "#4BC0C0",
+              "#9966FF",
+              "#FF9F40",
+            ],
+            hoverBackgroundColor: [
+              "#FF6384",
+              "#36A2EB",
+              "#FFCE56",
+              "#4BC0C0",
+              "#9966FF",
+              "#FF9F40",
+            ],
+          },
+        ],
+      });
+    }
+    fetchTransactions();
+  }, [segmentation]);
+
+  return (
+    <div className="p-4">
+      <h2 className="text-xl font-semibold mb-4">Transaction Breakdown Pie Chart</h2>
+      <div className="mb-4">
+        <label htmlFor="segmentation" className="mr-2">
+          Segment by:
+        </label>
+        <select
+          id="segmentation"
+          value={segmentation}
+          onChange={(e) => setSegmentation(e.target.value)}
+          className="border p-1 rounded"
+        >
+          <option value="category">Merchant Category</option>
+          <option value="state">State</option>
+          <option value="city">City</option>
+        </select>
+      </div>
+      {chartData ? <Pie data={chartData} /> : <p>Loading chart data...</p>}
+    </div>
+  );
+};
+
+// Live Risk Trend Line Chart Component
+const LiveRiskTrendLineChart = () => {
+  const [chartData, setChartData] = useState<any>(null);
+
+  useEffect(() => {
+    async function fetchRiskTrend() {
+      const { data, error } = await supabase
+        .from("transaction")
+        .select("trans_date, trans_time, risk_score");
+
+      if (error) {
+        // console.error("Error fetching risk trend data:", error);
+        console.log(error);
+        return;
+      }
+
+      // Combine trans_date and trans_time to form a timestamp label.
+      // Group transactions by this timestamp and compute average risk_score.
+      const trend: { [key: string]: { total: number; count: number } } = {};
+
+      data.forEach((tx: any) => {
+        const timestamp = `${tx.trans_date} ${tx.trans_time}`;
+        if (!trend[timestamp]) {
+          trend[timestamp] = { total: 0, count: 0 };
+        }
+        trend[timestamp].total += tx.risk_score;
+        trend[timestamp].count += 1;
+      });
+
+      // Sort timestamps
+      const labels = Object.keys(trend).sort((a, b) =>
+        new Date(a).getTime() - new Date(b).getTime()
+      );
+      const averages = labels.map(
+        (label) => trend[label].total / trend[label].count
+      );
+
+      setChartData({
+        labels,
+        datasets: [
+          {
+            label: "Average Risk Score",
+            data: averages,
+            borderColor: "#36A2EB",
+            fill: false,
+          },
+        ],
+      });
+    }
+    fetchRiskTrend();
+  }, []);
+
+  return (
+    <div className="p-4">
+      <h2 className="text-xl font-semibold mb-4">Live Risk Trend Line Graph</h2>
+      {chartData ? <Line data={chartData} /> : <p>Loading risk trend data...</p>}
+    </div>
+  );
+};
+
+// Transaction Volume Bar Chart Component
+const TransactionVolumeBarChart = () => {
+  const [chartData, setChartData] = useState<any>(null);
+  const riskThreshold = 0.5; // adjust threshold as needed
+
+  useEffect(() => {
+    async function fetchVolume() {
+      const { data, error } = await supabase
+        .from("transaction")
+        .select("category, risk_score");
+
+      if (error) {
+        // console.error("Error fetching transaction volume:", error);
+        console.log(error);
+        return;
+      }
+
+      // Group by category, count transactions and compute average risk_score per category.
+      const volume: {
+        [key: string]: { count: number; riskTotal: number };
+      } = {};
+
+      data.forEach((tx: any) => {
+        const cat = tx.category || "Unknown";
+        if (!volume[cat]) {
+          volume[cat] = { count: 0, riskTotal: 0 };
+        }
+        volume[cat].count += 1;
+        volume[cat].riskTotal += tx.risk_score;
+      });
+
+      const labels = Object.keys(volume);
+      const counts = labels.map((label) => volume[label].count);
+      const avgRisks = labels.map(
+        (label) => volume[label].riskTotal / volume[label].count
+      );
+
+      // Color-code each bar based on the average risk score
+      const backgroundColors = avgRisks.map((avg: number) =>
+        avg >= riskThreshold ? "#FF6384" : "#36A2EB"
+      );
+
+      setChartData({
+        labels,
+        datasets: [
+          {
+            label: "Transaction Volume",
+            data: counts,
+            backgroundColor: backgroundColors,
+          },
+        ],
+      });
+    }
+    fetchVolume();
+  }, []);
+
+  return (
+    <div className="p-4">
+      <h2 className="text-xl font-semibold mb-4">Transaction Volume Bar Chart</h2>
+      {chartData ? <Bar data={chartData} /> : <p>Loading volume data...</p>}
+    </div>
+  );
+};
+
+// Risk Distribution Histogram Component
+const RiskDistributionHistogram = () => {
+  const [chartData, setChartData] = useState<any>(null);
+  // Define bins—for example, five bins between 0 and 1.
+  const bins = [0, 0.2, 0.4, 0.6, 0.8, 1.0];
+
+  useEffect(() => {
+    async function fetchRiskDistribution() {
+      const { data, error } = await supabase
+        .from("transaction")
+        .select("risk_score");
+
+      if (error) {
+        // console.error("Error fetching risk distribution:", error);
+        console.log(error);
+        return;
+      }
+
+      // Count the number of risk_score values in each bin.
+      const distribution = Array(bins.length - 1).fill(0);
+      data.forEach((tx: any) => {
+        const score = tx.risk_score;
+        for (let i = 0; i < bins.length - 1; i++) {
+          if (score >= bins[i] && score < bins[i + 1]) {
+            distribution[i]++;
+            break;
+          }
+        }
+      });
+
+      const labels = bins
+        .slice(0, -1)
+        .map((b, i) => `${b.toFixed(1)} - ${bins[i + 1].toFixed(1)}`);
+
+      setChartData({
+        labels,
+        datasets: [
+          {
+            label: "Risk Distribution",
+            data: distribution,
+            backgroundColor: "#FFCE56",
+          },
+        ],
+      });
+    }
+    fetchRiskDistribution();
+  }, []);
+
+  return (
+    <div className="p-4">
+      <h2 className="text-xl font-semibold mb-4">Risk Distribution Histogram</h2>
+      {chartData ? <Bar data={chartData} /> : <p>Loading histogram data...</p>}
+    </div>
+  );
+};
+
+// Risk Gauge Widget Component
+const RiskGaugeWidget = () => {
+  const [chartData, setChartData] = useState<any>(null);
+  const riskThreshold = 0.5; // adjust threshold as needed
+
+  useEffect(() => {
+    async function fetchRiskGauge() {
+      const { data, error } = await supabase
+        .from("transaction")
+        .select("risk_score");
+
+      if (error) {
+        // console.error("Error fetching gauge data:", error);
+        console.log(error);
+        return;
+      }
+
+      // Compute total transactions and count high-risk transactions.
+      const total = data.length;
+      const highRiskCount = data.filter((tx: any) => tx.risk_score >= riskThreshold)
+        .length;
+      const highRiskPercentage = total ? (highRiskCount / total) * 100 : 0;
+
+      setChartData({
+        labels: ["High Risk", "Low Risk"],
+        datasets: [
+          {
+            data: [highRiskPercentage, 100 - highRiskPercentage],
+            backgroundColor: ["#FF6384", "#36A2EB"],
+          },
+        ],
+      });
+    }
+    fetchRiskGauge();
+  }, []);
+
+  return (
+    <div className="p-4">
+      <h2 className="text-xl font-semibold mb-4">High Risk Transactions Gauge</h2>
+      {chartData ? (
+        <Doughnut data={chartData} />
+      ) : (
+        <p>Loading gauge data...</p>
+      )}
+    </div>
+  );
+};
+
+// Sidebar Component
 function Sidebar({
   activeLink,
   setActiveLink,
@@ -45,13 +381,11 @@ function Sidebar({
   setActiveLink: React.Dispatch<React.SetStateAction<string>>;
 }) {
   return (
-    <aside className="h-full bg-white border-r border-gray-200 w-60">
-      {/* Banklytics Branding */}
+    <aside className="h-full w-60 border-r border-gray-200 bg-white">
       <div className="px-6 py-4">
         <div className="flex items-center gap-3">
-          {/* Logo Image */}
           <Image
-            src="/logo.png" // Ensure your logo file is in the /public folder
+            src="/logo.png"
             alt="Banklytics Logo"
             width={40}
             height={40}
@@ -60,9 +394,7 @@ function Sidebar({
           <span className="text-2xl font-semibold">Banklytics</span>
         </div>
       </div>
-
-      {/* Navigation Links */}
-      <nav className="flex flex-col h-full p-4">
+      <nav className="flex h-full flex-col p-4">
         <Link
           href="/admin"
           onClick={() => setActiveLink("dashboard")}
@@ -75,7 +407,6 @@ function Sidebar({
           <Home className="w-5 h-5" />
           Dashboard
         </Link>
-
         <Link
           href="/user"
           onClick={() => setActiveLink("user-profiles")}
@@ -88,7 +419,6 @@ function Sidebar({
           <User2 className="w-5 h-5" />
           User Profiles
         </Link>
-
         <Link
           href="#"
           onClick={() => setActiveLink("settings")}
@@ -108,7 +438,6 @@ function Sidebar({
 
 export default function Dashboard() {
   const [activeLink, setActiveLink] = useState("dashboard");
-  // State to store realtime transaction updates
   const [updates, setUpdates] = useState<Transaction[]>([]);
 
   useEffect(() => {
@@ -125,7 +454,6 @@ export default function Dashboard() {
           console.log("Realtime update received:", payload);
           const newUpdate = payload.new as Transaction;
           setUpdates((prev) => {
-            // Prevent duplicate entries
             if (prev.find((update) => update.trans_num === newUpdate.trans_num)) {
               return prev;
             }
@@ -142,13 +470,9 @@ export default function Dashboard() {
 
   return (
     <div className="flex h-screen overflow-hidden">
-      {/* Sidebar Component */}
       <Sidebar activeLink={activeLink} setActiveLink={setActiveLink} />
-
-      {/* Main Content Area */}
-      <div className="flex flex-col flex-1">
-        {/* Header */}
-        <header className="flex items-center h-16 px-6 bg-white border-b border-gray-200">
+      <div className="flex flex-1 flex-col">
+        <header className="flex h-16 items-center border-b border-gray-200 bg-white px-6">
           <h1 className="text-2xl font-semibold">Dashboard</h1>
           <div className="flex items-center gap-4 ml-auto">
             <div className="relative">
@@ -159,11 +483,9 @@ export default function Dashboard() {
                 className="w-[300px] bg-white pl-8"
               />
             </div>
-
             <Button variant="ghost" size="icon" className="relative">
               <Bell className="w-5 h-5" />
             </Button>
-
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Avatar>
@@ -182,8 +504,6 @@ export default function Dashboard() {
             </DropdownMenu>
           </div>
         </header>
-
-        {/* Main Content */}
         <main className="flex-1 p-6 overflow-auto">
           <div className="grid gap-6">
             {/* Middle row */}
@@ -205,7 +525,6 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
             </div>
-
             {/* Bottom row */}
             <div className="grid gap-6 md:grid-cols-3">
               <Card className="border rounded-lg shadow-sm md:col-span-2">
@@ -222,6 +541,54 @@ export default function Dashboard() {
                 </CardHeader>
                 <CardContent className="p-6">
                   <div className="h-[300px] rounded-lg bg-gray-50" />
+                </CardContent>
+              </Card>
+            </div>
+            {/* Transaction Breakdown Chart */}
+            <div className="mt-6">
+              <Card className="rounded-lg border shadow-sm">
+                <CardHeader className="border-b bg-white px-6 py-4">
+                  <CardTitle>Transaction Breakdown</CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <TransactionBreakdownChart />
+                </CardContent>
+              </Card>
+            </div>
+            {/* New Risk & Volume Charts */}
+            <div className="mt-6 grid gap-6 md:grid-cols-2">
+              <Card className="rounded-lg border shadow-sm">
+                <CardHeader className="border-b bg-white px-6 py-4">
+                  <CardTitle>Live Risk Trend</CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <LiveRiskTrendLineChart />
+                </CardContent>
+              </Card>
+              <Card className="rounded-lg border shadow-sm">
+                <CardHeader className="border-b bg-white px-6 py-4">
+                  <CardTitle>Transaction Volume</CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <TransactionVolumeBarChart />
+                </CardContent>
+              </Card>
+            </div>
+            <div className="mt-6 grid gap-6 md:grid-cols-2">
+              <Card className="rounded-lg border shadow-sm">
+                <CardHeader className="border-b bg-white px-6 py-4">
+                  <CardTitle>Risk Distribution</CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <RiskDistributionHistogram />
+                </CardContent>
+              </Card>
+              <Card className="rounded-lg border shadow-sm">
+                <CardHeader className="border-b bg-white px-6 py-4">
+                  <CardTitle>Risk Gauge</CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <RiskGaugeWidget />
                 </CardContent>
               </Card>
             </div>
