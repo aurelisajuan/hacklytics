@@ -15,6 +15,9 @@ from supabase import create_client, Client
 from model import simulate_transaction
 
 from db import reset_db, insert_trans, update_trans, get_cust, set_locked
+import base64
+import io
+from pydub import AudioSegment
 
 load_dotenv(override=True)
 app = FastAPI()
@@ -232,6 +235,44 @@ async def websocket_handler(websocket: WebSocket, call_id: str):
         await websocket.close(1011, "Server error")
     finally:
         print(f"LLM WebSocket connection closed for {call_id}")
+
+
+@app.post("/audio")
+async def process_audio(request: Request):
+    try:
+        # Get the audio file from the request
+        form = await request.form()
+        audio_file = form.get("audio")
+        
+        if not audio_file:
+            return JSONResponse(
+                status_code=400,
+                content={"error": "No audio file provided"}
+            )
+
+        # Read the contents of the uploaded file
+        audio_data = await audio_file.read()
+        
+        # Use an in-memory bytes buffer
+        audio_io = io.BytesIO(audio_data)
+
+        # Load the audio using pydub
+        audio_segment = AudioSegment.from_wav(audio_io)
+
+        # Export the audio as a WAV file
+        audio_segment.export("output.wav", format="wav")
+        
+        return JSONResponse(
+            status_code=200,
+            content={"message": "Audio file processed successfully"}
+        )
+
+    except Exception as e:
+        print(f"Error in process_audio: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Error processing audio: {str(e)}"}
+        )
 
 
 @app.delete("/reset")
