@@ -1,5 +1,8 @@
-*.csv
+test.csv
+fraudTest.csv
+fraudTrain.csv
 *.wav
 venv
 venv
 *.env
+.DS_Store
