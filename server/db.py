@@ -6,6 +6,8 @@ from datetime import datetime
 from supabase import create_async_client, AsyncClient
 from dotenv import load_dotenv
 
+import supabase
+
 load_dotenv(override=True)
 
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
