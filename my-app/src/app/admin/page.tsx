@@ -1,3 +1,5 @@
+/* eslint-disable  @typescript-eslint/no-explicit-any */
+
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -29,7 +31,11 @@ import {
   LineElement,
   PointElement,
 } from "chart.js";
-import { GoogleMap, useJsApiLoader, HeatmapLayer } from "@react-google-maps/api";
+import {
+  GoogleMap,
+  useJsApiLoader,
+  HeatmapLayer,
+} from "@react-google-maps/api";
 
 ChartJS.register(
   ArcElement,
@@ -68,15 +74,18 @@ const TransactionBreakdownChart = () => {
 
   useEffect(() => {
     async function fetchTransactions() {
-      const selectColumns = segmentation === "category"
-        ? "category, amt"
-        : segmentation === "state"
-        ? "state, amt"
-        : segmentation === "city"
-        ? "city, amt"
-        : "category, amt";
+      const selectColumns =
+        segmentation === "category"
+          ? "category, amt"
+          : segmentation === "state"
+          ? "state, amt"
+          : segmentation === "city"
+          ? "city, amt"
+          : "category, amt";
 
-      const { data, error } = await supabase.from("transaction").select(selectColumns);
+      const { data, error } = await supabase
+        .from("transaction")
+        .select(selectColumns);
 
       if (error) {
         console.log(error);
@@ -95,17 +104,29 @@ const TransactionBreakdownChart = () => {
         labels,
         datasets: [
           {
-        data: amounts,
-        backgroundColor: [
-          "#FFCE56", "#FFDD78", "#FFEBA0", // Yellow shades
-          "#36A2EB", "#5AB3F0", "#7DC4F5", // Blue shades
-          "#4BC0C0", "#6FD1D1", "#92E2E2"  // Green shades
-        ],
-        hoverBackgroundColor: [
-          "#FFCE56", "#FFDD78", "#FFEBA0", // Yellow shades
-          "#36A2EB", "#5AB3F0", "#7DC4F5", // Blue shades
-          "#4BC0C0", "#6FD1D1", "#92E2E2"  // Green shades
-        ],
+            data: amounts,
+            backgroundColor: [
+              "#FFCE56",
+              "#FFDD78",
+              "#FFEBA0", // Yellow shades
+              "#36A2EB",
+              "#5AB3F0",
+              "#7DC4F5", // Blue shades
+              "#4BC0C0",
+              "#6FD1D1",
+              "#92E2E2", // Green shades
+            ],
+            hoverBackgroundColor: [
+              "#FFCE56",
+              "#FFDD78",
+              "#FFEBA0", // Yellow shades
+              "#36A2EB",
+              "#5AB3F0",
+              "#7DC4F5", // Blue shades
+              "#4BC0C0",
+              "#6FD1D1",
+              "#92E2E2", // Green shades
+            ],
           },
         ],
       });
@@ -181,7 +202,9 @@ const GoogleHeatMap = () => {
         onUnmount={onUnmount}
       >
         <HeatmapLayer
-          data={heatmapData.map((point) => new google.maps.LatLng(point.lat, point.lng))}
+          data={heatmapData.map(
+            (point) => new google.maps.LatLng(point.lat, point.lng)
+          )}
           options={{ radius: 20, opacity: 0.6 }}
         />
       </GoogleMap>
@@ -195,7 +218,9 @@ const LiveRiskTrendLineChart = () => {
 
   useEffect(() => {
     async function fetchRiskTrend() {
-      const { data, error } = await supabase.from("transaction").select("trans_date, trans_time, risk_fact");
+      const { data, error } = await supabase
+        .from("transaction")
+        .select("trans_date, trans_time, risk_fact");
       if (error) return console.log(error);
 
       const trend: { [key: string]: { total: number; count: number } } = {};
@@ -206,13 +231,22 @@ const LiveRiskTrendLineChart = () => {
         trend[timestamp].count += 1;
       });
 
-      const labels = Object.keys(trend).sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
-      const averages = labels.map(label => trend[label].total / trend[label].count);
+      const labels = Object.keys(trend).sort(
+        (a, b) => new Date(a).getTime() - new Date(b).getTime()
+      );
+      const averages = labels.map(
+        (label) => trend[label].total / trend[label].count
+      );
 
       setChartData({
         labels,
         datasets: [
-          { label: "Average Risk Score", data: averages, borderColor: "#36A2EB", fill: false },
+          {
+            label: "Average Risk Score",
+            data: averages,
+            borderColor: "#36A2EB",
+            fill: false,
+          },
         ],
       });
     }
@@ -237,10 +271,13 @@ const TransactionVolumeBarChart = () => {
 
   useEffect(() => {
     async function fetchVolume() {
-      const { data, error } = await supabase.from("transaction").select("category, risk_fact");
+      const { data, error } = await supabase
+        .from("transaction")
+        .select("category, risk_fact");
       if (error) return console.log(error);
 
-      const volume: { [key: string]: { count: number; riskTotal: number } } = {};
+      const volume: { [key: string]: { count: number; riskTotal: number } } =
+        {};
       data.forEach((tx: any) => {
         const cat = tx.category || "Unknown";
         if (!volume[cat]) volume[cat] = { count: 0, riskTotal: 0 };
@@ -249,14 +286,20 @@ const TransactionVolumeBarChart = () => {
       });
 
       const labels = Object.keys(volume);
-      const counts = labels.map(label => volume[label].count);
-      const avgRisks = labels.map(label => volume[label].riskTotal / volume[label].count);
+      const counts = labels.map((label) => volume[label].count);
+      const avgRisks = labels.map(
+        (label) => volume[label].riskTotal / volume[label].count
+      );
       // const backgroundColors = avgRisks.map(avg => avg >= riskThreshold ? "#FF6384" : "#36A2EB");
 
-      const backgroundColor = avgRisks.map(avg => avg >= riskThreshold ? "#FF6384" : "#36A2EB");
+      const backgroundColor = avgRisks.map((avg) =>
+        avg >= riskThreshold ? "#FF6384" : "#36A2EB"
+      );
       setChartData({
         labels,
-        datasets: [{ label: "Transaction Volume", data: counts, backgroundColor }],
+        datasets: [
+          { label: "Transaction Volume", data: counts, backgroundColor },
+        ],
       });
     }
     fetchVolume();
@@ -264,7 +307,11 @@ const TransactionVolumeBarChart = () => {
 
   return (
     <div className="w-full h-full flex items-center justify-center p-2">
-      {chartData ? <Bar data={chartData} options={{ maintainAspectRatio: false }} /> : <p>Loading volume data...</p>}
+      {chartData ? (
+        <Bar data={chartData} options={{ maintainAspectRatio: false }} />
+      ) : (
+        <p>Loading volume data...</p>
+      )}
     </div>
   );
 };
@@ -276,7 +323,9 @@ const RiskDistributionHistogram = () => {
 
   useEffect(() => {
     async function fetchRiskDistribution() {
-      const { data, error } = await supabase.from("transaction").select("risk_fact");
+      const { data, error } = await supabase
+        .from("transaction")
+        .select("risk_fact");
       if (error) return console.log(error);
 
       const distribution = Array(bins.length - 1).fill(0);
@@ -290,10 +339,18 @@ const RiskDistributionHistogram = () => {
         }
       });
 
-      const labels = bins.slice(0, -1).map((b, i) => `${b.toFixed(1)} - ${bins[i + 1].toFixed(1)}`);
+      const labels = bins
+        .slice(0, -1)
+        .map((b, i) => `${b.toFixed(1)} - ${bins[i + 1].toFixed(1)}`);
       setChartData({
         labels,
-        datasets: [{ label: "Risk Distribution", data: distribution, backgroundColor: "#FFCE56" }],
+        datasets: [
+          {
+            label: "Risk Distribution",
+            data: distribution,
+            backgroundColor: "#FFCE56",
+          },
+        ],
       });
     }
     fetchRiskDistribution();
@@ -301,7 +358,11 @@ const RiskDistributionHistogram = () => {
 
   return (
     <div className="w-full h-full flex items-center justify-center p-2">
-      {chartData ? <Bar data={chartData} options={{ maintainAspectRatio: false }} /> : <p>Loading histogram data...</p>}
+      {chartData ? (
+        <Bar data={chartData} options={{ maintainAspectRatio: false }} />
+      ) : (
+        <p>Loading histogram data...</p>
+      )}
     </div>
   );
 };
@@ -313,16 +374,25 @@ const RiskGaugeWidget = () => {
 
   useEffect(() => {
     async function fetchRiskGauge() {
-      const { data, error } = await supabase.from("transaction").select("risk_fact");
+      const { data, error } = await supabase
+        .from("transaction")
+        .select("risk_fact");
       if (error) return console.log(error);
 
       const total = data.length;
-      const highRiskCount = data.filter((tx: any) => tx.risk_fact >= riskThreshold).length;
+      const highRiskCount = data.filter(
+        (tx: any) => tx.risk_fact >= riskThreshold
+      ).length;
       const highRiskPercentage = total ? (highRiskCount / total) * 100 : 0;
 
       setChartData({
         labels: ["High Risk", "Low Risk"],
-        datasets: [{ data: [highRiskPercentage, 100 - highRiskPercentage], backgroundColor: ["#36A2EB", "#FFCE56"] }],
+        datasets: [
+          {
+            data: [highRiskPercentage, 100 - highRiskPercentage],
+            backgroundColor: ["#36A2EB", "#FFCE56"],
+          },
+        ],
       });
     }
     fetchRiskGauge();
@@ -331,32 +401,72 @@ const RiskGaugeWidget = () => {
   return (
     <div className="w-full h-full flex flex-col items-center justify-center p-2">
       <div className="w-60 h-60 pb-10">
-        {chartData ? <Doughnut data={chartData} options={{ maintainAspectRatio: false }} /> : <p>Loading gauge data...</p>}
+        {chartData ? (
+          <Doughnut data={chartData} options={{ maintainAspectRatio: false }} />
+        ) : (
+          <p>Loading gauge data...</p>
+        )}
       </div>
     </div>
   );
 };
 
 // Sidebar Component
-function Sidebar({ activeLink, setActiveLink }: { activeLink: string; setActiveLink: React.Dispatch<React.SetStateAction<string>>; }) {
+function Sidebar({
+  activeLink,
+  setActiveLink,
+}: {
+  activeLink: string;
+  setActiveLink: React.Dispatch<React.SetStateAction<string>>;
+}) {
   return (
     <aside className="h-full w-60 border-r border-gray-200 bg-white">
       <div className="px-6 py-4">
         <div className="flex items-center gap-3">
-          <Image src="/logo.png" alt="Banklytics Logo" width={40} height={40} className="object-contain" />
+          <Image
+            src="/logo.png"
+            alt="Banklytics Logo"
+            width={40}
+            height={40}
+            className="object-contain"
+          />
           <span className="text-2xl font-semibold">Banklytics</span>
         </div>
       </div>
       <nav className="flex h-full flex-col p-4">
-        <Link href="/admin" onClick={() => setActiveLink("dashboard")} className={`mb-1 flex items-center gap-2 rounded-lg px-4 py-2 ${activeLink === "dashboard" ? "bg-[#E5F3FF] text-sky-600" : "text-gray-500 hover:bg-[#E5F3FF] hover:text-sky-600"}`}>
+        <Link
+          href="/admin"
+          onClick={() => setActiveLink("dashboard")}
+          className={`mb-1 flex items-center gap-2 rounded-lg px-4 py-2 ${
+            activeLink === "dashboard"
+              ? "bg-[#E5F3FF] text-sky-600"
+              : "text-gray-500 hover:bg-[#E5F3FF] hover:text-sky-600"
+          }`}
+        >
           <Home className="w-5 h-5" />
           Dashboard
         </Link>
-        <Link href="/user" onClick={() => setActiveLink("user-profiles")} className={`mb-1 flex items-center gap-2 rounded-lg px-4 py-2 ${activeLink === "user-profiles" ? "bg-[#E5F3FF] text-sky-600" : "text-gray-500 hover:bg-[#E5F3FF] hover:text-sky-600"}`}>
+        <Link
+          href="/user"
+          onClick={() => setActiveLink("user-profiles")}
+          className={`mb-1 flex items-center gap-2 rounded-lg px-4 py-2 ${
+            activeLink === "user-profiles"
+              ? "bg-[#E5F3FF] text-sky-600"
+              : "text-gray-500 hover:bg-[#E5F3FF] hover:text-sky-600"
+          }`}
+        >
           <User2 className="w-5 h-5" />
           User Profiles
         </Link>
-        <Link href="#" onClick={() => setActiveLink("settings")} className={`flex items-center gap-2 rounded-lg px-4 py-2 ${activeLink === "settings" ? "bg-[#E5F3FF] text-sky-600" : "text-gray-500 hover:bg-[#E5F3FF] hover:text-sky-600"}`}>
+        <Link
+          href="#"
+          onClick={() => setActiveLink("settings")}
+          className={`flex items-center gap-2 rounded-lg px-4 py-2 ${
+            activeLink === "settings"
+              ? "bg-[#E5F3FF] text-sky-600"
+              : "text-gray-500 hover:bg-[#E5F3FF] hover:text-sky-600"
+          }`}
+        >
           <Settings className="w-5 h-5" />
           Settings
         </Link>
@@ -372,15 +482,19 @@ export default function Dashboard() {
   useEffect(() => {
     const channel = supabase
       .channel("hacklytics")
-      .on("postgres_changes", { event: "*", schema: "public", table: "transaction" }, (payload) => {
-        console.log("Realtime update received:", payload);
-        const newUpdate = payload.new as Transaction;
-        setUpdates((prev) =>
-          prev.find((update) => update.trans_num === newUpdate.trans_num)
-            ? prev
-            : [...prev, newUpdate]
-        );
-      })
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "transaction" },
+        (payload) => {
+          console.log("Realtime update received:", payload);
+          const newUpdate = payload.new as Transaction;
+          setUpdates((prev) =>
+            prev.find((update) => update.trans_num === newUpdate.trans_num)
+              ? prev
+              : [...prev, newUpdate]
+          );
+        }
+      )
       .subscribe();
 
     return () => {
@@ -397,7 +511,11 @@ export default function Dashboard() {
           <div className="flex items-center gap-4 ml-auto">
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input type="search" placeholder="Search here ..." className="w-[300px] bg-white pl-8" />
+              <Input
+                type="search"
+                placeholder="Search here ..."
+                className="w-[300px] bg-white pl-8"
+              />
             </div>
             <Button variant="ghost" size="icon" className="relative">
               <Bell className="w-5 h-5" />

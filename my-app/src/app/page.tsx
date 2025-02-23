@@ -39,9 +39,9 @@ type LockStatus = "yes" | "pending low" | "pending high";
 type PageMode = 0 | 1 | 2;
 
 const page_map: Record<LockStatus, PageMode> = {
-  "yes": 2,
+  yes: 2,
   "pending low": 0,
-  "pending high": 1
+  "pending high": 1,
 };
 
 const Home = () => {
@@ -71,17 +71,17 @@ const Home = () => {
 
     // Create a channel for realtime customer updates
     const customerChannel = supabase
-      .channel('customer-channel')
+      .channel("customer-channel")
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'customer',
+          event: "UPDATE",
+          schema: "public",
+          table: "customer",
           filter: `id=eq.${customer.id}`,
         },
         (payload) => {
-          console.log('Customer update received:', payload.new);
+          console.log("Customer update received:", payload.new);
           setCustomer(payload.new);
         }
       )
@@ -93,25 +93,27 @@ const Home = () => {
     };
   }, [customer]);
 
-
   // Fetch transactions for Lisa Lin using her credit card (cc) number
   useEffect(() => {
     if (!customer) return;
 
     // Create a channel for realtime updates
     const channel = supabase
-      .channel('transactions-channel')
+      .channel("transactions-channel")
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'transaction',
+          event: "INSERT",
+          schema: "public",
+          table: "transaction",
           filter: `cc_num=eq.${customer.cc}`,
         },
         (payload) => {
-          console.log('New transaction received:', payload.new);
-          setTransactions((prevTransactions) => [payload.new, ...prevTransactions]);
+          console.log("New transaction received:", payload.new);
+          setTransactions((prevTransactions) => [
+            payload.new,
+            ...prevTransactions,
+          ]);
         }
       )
       .subscribe();
@@ -122,18 +124,15 @@ const Home = () => {
     };
   }, [customer]);
 
-  console.log(customer)
-
+  console.log(customer);
 
   if (!customer) return null;
 
-  if (customer.is_locked === 'no') {
+  if (customer.is_locked === "no") {
     return <Profile customer={customer} transactions={transactions} />;
   } else {
     return <FraudAlert mode={page_map[customer.is_locked]} />;
   }
-
-
 };
 
 export default Home;
