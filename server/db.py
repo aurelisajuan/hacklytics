@@ -15,6 +15,7 @@ SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")
 
 # supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
+
 async def insert_trans(
     cc_num: str,
     merchant: str,
@@ -295,14 +296,35 @@ async def reset_db() -> dict:
 
         # Load data from base.csv
         print("Loading data from base.csv...")
-        with open(
-            "./experiments/sample_data/base.csv", mode="r", newline=""
-        ) as csvfile:
+        with open("./sample_data/base.csv", mode="r", newline="") as csvfile:
             reader = csv.DictReader(csvfile)
             # Print CSV schema (the header field names)
             print("CSV schema (field names):", reader.fieldnames)
-            # Convert CSV rows to a list of dictionaries
-            base_data = [row for row in reader]
+            # Convert CSV rows to a list of dictionaries, filtering for specified rows
+
+            # Filter for only the columns we want from the CSV
+            filtered_data = []
+            for row in reader:
+                filtered_row = {
+                    "merchant": row["merchant"],
+                    "category": row["category"],
+                    "trans_num": row["trans_num"],
+                    "trans_date": datetime.strptime(
+                        row["trans_date_trans_time"].split()[0], "%Y-%m-%d"
+                    )
+                    .date()
+                    .isoformat(),
+                    "trans_time": datetime.strptime(
+                        row["trans_date_trans_time"], "%Y-%m-%d %H:%M:%S"
+                    ).isoformat(),
+                    "amt": float(row["amt"]),
+                    "merch_lat": float(row["merch_lat"]),
+                    "merch_long": float(row["merch_long"]),
+                    "is_fraud": int(row["is_fraud"]),
+                    "cc_num": row["cc_num"],
+                }
+                filtered_data.append(filtered_row)
+            base_data = filtered_data
 
         if not base_data:
             message = "No data found in base.csv."
@@ -327,6 +349,3 @@ async def reset_db() -> dict:
         error_message = f"Exception in reset_database: {e}"
         print(error_message)
         return {"error": error_message}
-
-result = asyncio.run(reset_db())
-print("reset_db result:", result)
