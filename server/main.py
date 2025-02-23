@@ -18,6 +18,8 @@ from llm import LlmClient
 from supabase import create_client, Client
 from datetime import datetime
 
+from db import insert_trans, update_trans
+
 load_dotenv(override=True)
 app = FastAPI()
 origins = [
@@ -51,7 +53,15 @@ async def get_transaction(request: Request):
             # No fraud detected
 
             # Here insert transaction into db with fraud false
-
+            insert_trans(
+                data.get("cc_num"),
+                data.get("merchant"),
+                data.get("category"),
+                data.get("amt"),
+                data.get("merch_lat"),
+                data.get("merch_long"),
+                "false",
+            )
             return JSONResponse(
                 status_code=200,
                 content={"success": "Transaction inserted successfully"},
@@ -61,9 +71,18 @@ async def get_transaction(request: Request):
             # Low Fraud
 
             # Here insert transaaction into db with fraud pending
-
+            insert_trans(
+                data.get("cc_num"),
+                data.get("merchant"),
+                data.get("category"),
+                data.get("amt"),
+                data.get("merch_lat"),
+                data.get("merch_long"),
+                "pending",
+            )
+            
+            
             # Call the user to confirm fraud
-
             return JSONResponse(
                 status_code=200,
                 content={"success": "Transaction inserted successfully"},
@@ -72,9 +91,16 @@ async def get_transaction(request: Request):
             # High Fraud
 
             # Here insert transaaction into db with fraud pending
-
+            insert_trans(
+                data.get("cc_num"),
+                data.get("merchant"),
+                data.get("category"),
+                data.get("amt"),
+                data.get("merch_lat"),
+                data.get("merch_long"),
+                "pending",
+            )
             # Call the user to confirm fraud
-
             return JSONResponse(
                 status_code=200,
                 content={"success": "Transaction inserted successfully"},

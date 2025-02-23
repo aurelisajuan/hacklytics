@@ -10,7 +10,16 @@ SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-def insert_trans(cc_num: str, merchant: str, category: str, amt: float, merch_lat: float, merch_long: float, is_Fraud: str):
+
+def insert_trans(
+    cc_num: str,
+    merchant: str,
+    category: str,
+    amt: float,
+    merch_lat: float,
+    merch_long: float,
+    is_fraud: str,
+):
     """
     Insert a transaction into the database.
 
@@ -27,7 +36,13 @@ def insert_trans(cc_num: str, merchant: str, category: str, amt: float, merch_la
     """
     try:
         print("Checking for customer with cc_num:", cc_num)
-        customer_query = supabase.table("customer").select("*").eq("cc", cc_num).maybe_single().execute()
+        customer_query = (
+            supabase.table("customer")
+            .select("*")
+            .eq("cc", cc_num)
+            .maybe_single()
+            .execute()
+        )
         print("Customer query response:", customer_query)
         customer = customer_query.data
 
@@ -35,7 +50,7 @@ def insert_trans(cc_num: str, merchant: str, category: str, amt: float, merch_la
             error_message = f"Customer with cc_num {cc_num} not found"
             print(error_message)
             return {"error": error_message}
-        
+
         user_id = customer["id"]
         print("Customer found, user_id:", user_id)
 
@@ -50,17 +65,21 @@ def insert_trans(cc_num: str, merchant: str, category: str, amt: float, merch_la
             "amt": amt,
             "merch_lat": merch_lat,
             "merch_long": merch_long,
-            "is_fraud": is_Fraud,
+            "is_fraud": is_fraud,
             "cc_num": cc_num,
             "user_id": user_id,
         }
         print("Inserting new transaction:", new_transaction)
 
-        insert_response = supabase.table("transactions").insert(new_transaction).execute()
+        insert_response = (
+            supabase.table("transactions").insert(new_transaction).execute()
+        )
 
         response_data = insert_response.get("data")
         if not response_data:
-            return {"error": "No data returned from insert. Possibly an error occurred."}
+            return {
+                "error": "No data returned from insert. Possibly an error occurred."
+            }
 
         print("Insert response:", insert_response)
 
@@ -68,29 +87,30 @@ def insert_trans(cc_num: str, merchant: str, category: str, amt: float, merch_la
             error_message = f"Error inserting transaction: {insert_response.error}"
             print(error_message)
             return {"error": error_message}
-        
+
         success_message = f"Transaction inserted successfully: {new_transaction}"
         print(success_message)
         return {"success": success_message, "data": insert_response.data}
-    
+
     except Exception as e:
         error_message = f"Exception in insert_trans: {e}"
         print(error_message)
         return {"error": error_message}
-    
+
 
 # Run test
-    # response = insert_trans(
-    #     cc_num="3502088871723054",  
-    #     merchant="fraud_Altenwerth-Kilback",
-    #     category="home",
-    #     amt=27.12,
-    #     merch_lat=38.0298,
-    #     merch_long=-77.0793
-    # )
-    # print("Final insert_trans response:", response)
+# response = insert_trans(
+#     cc_num="3502088871723054",
+#     merchant="fraud_Altenwerth-Kilback",
+#     category="home",
+#     amt=27.12,
+#     merch_lat=38.0298,
+#     merch_long=-77.0793
+# )
+# print("Final insert_trans response:", response)
 
-def update_transaction(trans_num: str, updated_fields: dict) -> dict:
+
+def update_trans(trans_num: str, updated_fields: dict) -> dict:
     """
     Update one or more fields in a transaction row by matching on `trans_num`.
 
@@ -111,10 +131,12 @@ def update_transaction(trans_num: str, updated_fields: dict) -> dict:
             }
     """
     try:
-        response = supabase.table("transaction") \
-                            .update(updated_fields) \
-                            .eq("trans_num", trans_num) \
-                            .execute()
+        response = (
+            supabase.table("transaction")
+            .update(updated_fields)
+            .eq("trans_num", trans_num)
+            .execute()
+        )
 
         # updated_rows = response.get("data", [])
         updated_rows = response.data or []
@@ -122,13 +144,11 @@ def update_transaction(trans_num: str, updated_fields: dict) -> dict:
         if not updated_rows:
             return {"error": f"No rows updated for transaction number: {trans_num}"}
 
-        return {
-            "success": f"Updated {len(updated_rows)} row(s).",
-            "data": updated_rows
-        }
+        return {"success": f"Updated {len(updated_rows)} row(s).", "data": updated_rows}
 
     except Exception as e:
         return {"error": f"Exception while updating transaction {trans_num}: {e}"}
+
 
 # result = update_transaction(
 #     trans_num="cdcd57ea-196e-4891-ab5f-e1ded62d5702",
