@@ -243,13 +243,11 @@ const LiveRiskTrendLineChart = () => {
         .select("trans_date, trans_time, risk_fact");
 
       if (error) {
-        // console.error("Error fetching risk trend data:", error);
         console.log(error);
         return;
       }
 
-      // Combine trans_date and trans_time to form a timestamp label.
-      // Group transactions by this timestamp and compute average risk_fact.
+      // Group transactions by timestamp (combine date and time) and compute average risk_fact.
       const trend: { [key: string]: { total: number; count: number } } = {};
 
       data.forEach((tx: any) => {
@@ -261,7 +259,7 @@ const LiveRiskTrendLineChart = () => {
         trend[timestamp].count += 1;
       });
 
-      // Sort timestamps
+      // Sort timestamps in chronological order.
       const labels = Object.keys(trend).sort(
         (a, b) => new Date(a).getTime() - new Date(b).getTime()
       );
@@ -285,10 +283,9 @@ const LiveRiskTrendLineChart = () => {
   }, []);
 
   return (
-    <div className="p-4">
-      <h2 className="text-xl font-semibold mb-4">Live Risk Trend Line Graph</h2>
+    <div className="p-4" style={{ width: "350px", height: "250px" }}>
       {chartData ? (
-        <Line data={chartData} />
+        <Line data={chartData} options={{ maintainAspectRatio: false }} />
       ) : (
         <p>Loading risk trend data...</p>
       )}
@@ -412,9 +409,6 @@ const RiskDistributionHistogram = () => {
 
   return (
     <div className="p-4">
-      <h2 className="text-xl font-semibold mb-4">
-        Risk Distribution Histogram
-      </h2>
       {chartData ? <Bar data={chartData} /> : <p>Loading histogram data...</p>}
     </div>
   );
@@ -652,8 +646,8 @@ export default function Dashboard() {
               </Card>
             </div>
             {/* Bottom row */}
-            <div className="grid gap-3 md:grid-cols-3">
-              <Card className="rounded-lg border-r shadow-sm md:col-span-2">
+            <div className="grid gap-3 md:grid-cols-2">
+              <Card className="rounded-lg border-r shadow-sm">
                 <CardHeader className="border-b bg-white px-6">
                   <CardTitle>Geospatial Heat Map</CardTitle>
                 </CardHeader>
@@ -663,7 +657,7 @@ export default function Dashboard() {
               </Card>
               <Card className="rounded-lg border-r shadow-sm">
                 <CardHeader className="border-b bg-white px-6">
-                  <CardTitle>Live Risk Trend Line Graph</CardTitle>
+                  <CardTitle>Live Risk Trend Line Chart</CardTitle>
                 </CardHeader>
                 <CardContent className="p-6 border-r">
                   <LiveRiskTrendLineChart />
