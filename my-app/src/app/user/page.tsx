@@ -27,8 +27,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { createClient } from "@supabase/supabase-js";
+import AudioRecorder from "@/components/audio";
 
-// Define the Customer interface
 interface Customer {
   id?: string;
   first_name: string;
@@ -46,7 +46,6 @@ interface Customer {
   is_locked: string;
 }
 
-// Define the Transaction interface
 interface Transaction {
   merchant: string;
   category: string;
@@ -56,7 +55,7 @@ interface Transaction {
   amt: number;
   merch_lat: number;
   merch_long: number;
-  is_fraud: string;
+  is_fraud: string; // numeric string (0 to 1)
   cc_num: string;
   user_id: string;
 }
@@ -65,7 +64,12 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Sidebar Component: Combines Banklytics branding and navigation
+function getFraudRisk(score: number): string {
+  if (score < 0.5) return "No Fraud";
+  if (score < 0.7) return "Low Fraud";
+  return "High Fraud";
+}
+
 function Sidebar({
   activeLink,
   setActiveLink,
@@ -74,11 +78,10 @@ function Sidebar({
   setActiveLink: React.Dispatch<React.SetStateAction<string>>;
 }) {
   return (
-    <aside className="h-full w-60 border-r border-gray-200 bg-white">
+    <aside className="h-full bg-white border-r border-gray-200 w-60">
       {/* Banklytics Branding */}
       <div className="px-6 py-4">
         <div className="flex items-center gap-3">
-          {/* Logo Image */}
           <Image
             src="/logo.png"
             alt="Banklytics Logo"
@@ -90,41 +93,38 @@ function Sidebar({
         </div>
       </div>
       {/* Navigation Links */}
-      <nav className="flex h-full flex-col p-4">
+      <nav className="flex flex-col h-full p-4">
         <Link
           href="/admin"
           onClick={() => setActiveLink("dashboard")}
-          className={`mb-1 flex items-center gap-2 rounded-lg px-4 py-2 ${
-            activeLink === "dashboard"
+          className={`mb-1 flex items-center gap-2 rounded-lg px-4 py-2 ${activeLink === "dashboard"
               ? "bg-[#E5F3FF] text-sky-600"
               : "text-gray-500 hover:bg-[#E5F3FF] hover:text-sky-600"
-          }`}
+            }`}
         >
-          <HomeIcon className="h-5 w-5" />
+          <HomeIcon className="w-5 h-5" />
           Dashboard
         </Link>
         <Link
           href="/user"
           onClick={() => setActiveLink("user-profiles")}
-          className={`mb-1 flex items-center gap-2 rounded-lg px-4 py-2 ${
-            activeLink === "user-profiles"
+          className={`mb-1 flex items-center gap-2 rounded-lg px-4 py-2 ${activeLink === "user-profiles"
               ? "bg-[#E5F3FF] text-sky-600"
               : "text-gray-500 hover:bg-[#E5F3FF] hover:text-sky-600"
-          }`}
+            }`}
         >
-          <UserCircle className="h-5 w-5" />
+          <UserCircle className="w-5 h-5" />
           User Profiles
         </Link>
         <Link
           href="#"
           onClick={() => setActiveLink("settings")}
-          className={`flex items-center gap-2 rounded-lg px-4 py-2 ${
-            activeLink === "settings"
+          className={`flex items-center gap-2 rounded-lg px-4 py-2 ${activeLink === "settings"
               ? "bg-[#E5F3FF] text-sky-600"
               : "text-gray-500 hover:bg-[#E5F3FF] hover:text-sky-600"
-          }`}
+            }`}
         >
-          <Settings className="h-5 w-5" />
+          <Settings className="w-5 h-5" />
           Settings
         </Link>
       </nav>
@@ -133,7 +133,6 @@ function Sidebar({
 }
 
 export default function DashboardPage() {
-  // Initialize active link as "user-profiles" so the User Profiles nav item is highlighted on page load.
   const [activeLink, setActiveLink] = useState("user-profiles");
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [recentTransaction, setRecentTransaction] = useState<Transaction | null>(null);
@@ -157,32 +156,65 @@ export default function DashboardPage() {
   }, []);
 
   // Fetch the most recent transaction for the customer based on the credit card number (cc)
+  async function fetchTransaction() {
+    if (!customer) return;
+    const { data, error } = await supabase
+      .from("transaction")
+      .select("*")
+      .eq("cc_num", customer.cc)
+      .order("trans_date", { ascending: false })
+      .limit(1)
+      .single();
+    if (error) {
+      console.error("Error fetching transaction data:", error);
+      return;
+    }
+    setRecentTransaction(data);
+  }
+
+  // Re-fetch transaction data when customer info is available
   useEffect(() => {
-    async function fetchTransaction() {
-      if (!customer) return;
-      const { data, error } = await supabase
-        .from("transaction")
-        .select("*")
-        .eq("cc_num", customer.cc)
-        .order("trans_date", { ascending: false })
-        .limit(1)
-        .single();
-      if (error) {
-        console.error("Error fetching transaction data:", error);
+    if (customer) {
+      fetchTransaction();
+    }
+  }, [customer]);
+
+  async function handleReset() {
+    try {
+      // Call your Next.js API route that proxies the request to your Python backend
+      const response = await fetch("https://fitting-correctly-lioness.ngrok-free.app/reset", {
+        method: "DELETE",
+      });
+
+      const contentType = response.headers.get("content-type");
+      let result;
+      if (contentType && contentType.includes("application/json")) {
+        result = await response.json();
+      } else {
+        result = { message: "Non-JSON response", data: await response.text() };
+      }
+
+      if (!response.ok) {
+        console.error("Reset failed:", result.error || result.message || result);
         return;
       }
-      setRecentTransaction(data);
+
+      console.log("Reset succeeded:", result.success || result.message);
+      // After resetting, re-fetch the latest transaction for Lisa Lin
+      await fetchTransaction();
+    } catch (error) {
+      console.error("Error calling the reset API route:", error);
     }
-    fetchTransaction();
-  }, [customer]);
+  }
+
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       <Sidebar activeLink={activeLink} setActiveLink={setActiveLink} />
-      <div className="flex flex-1 flex-col">
-        <header className="flex h-16 items-center border-b border-gray-200 bg-white px-6">
+      <div className="flex flex-col flex-1">
+        <header className="flex items-center h-16 px-6 bg-white border-b border-gray-200">
           <h1 className="text-2xl font-semibold">User Profile</h1>
-          <div className="ml-auto flex items-center gap-4">
+          <div className="flex items-center gap-4 ml-auto">
             <div className="relative">
               <SearchIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
@@ -192,7 +224,7 @@ export default function DashboardPage() {
               />
             </div>
             <Button variant="ghost" size="icon" className="relative">
-              <BellIcon className="h-5 w-5" />
+              <BellIcon className="w-5 h-5" />
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -257,28 +289,20 @@ export default function DashboardPage() {
                   <Button
                     variant="outline"
                     className="rounded-full border-gray-500 text-gray-500"
+                    onClick={handleReset}
                   >
                     <span className="mr-1.5 h-2 w-2 rounded-full bg-gray-500" />
                     Reset
                   </Button>
-                  <Button
-                    variant="outline"
-                    className="rounded-full border-blue-500 text-blue-500"
-                  >
+                  <Button variant="outline" className="text-blue-500 border-blue-500 rounded-full">
                     <span className="mr-1.5 h-2 w-2 rounded-full bg-blue-500" />
                     No Fraud
                   </Button>
-                  <Button
-                    variant="outline"
-                    className="rounded-full border-orange-500 text-orange-500"
-                  >
+                  <Button variant="outline" className="text-orange-500 border-orange-500 rounded-full">
                     <span className="mr-1.5 h-2 w-2 rounded-full bg-orange-500" />
                     Low Fraud
                   </Button>
-                  <Button
-                    variant="outline"
-                    className="rounded-full border-red-500 text-red-500"
-                  >
+                  <Button variant="outline" className="text-red-500 border-red-500 rounded-full">
                     <span className="mr-1.5 h-2 w-2 rounded-full bg-red-500" />
                     High Fraud
                   </Button>
@@ -290,23 +314,33 @@ export default function DashboardPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="grid gap-6 md:grid-cols-2">
-                      <div className="aspect-video w-80 rounded-xl bg-gradient-to-br from-gray-200 to-gray-300" />
+                      {/* <div className="aspect-video w-80 rounded-xl bg-gradient-to-br from-gray-200 to-gray-300" /> */}
+                      <div className="px-4 mb-6">
+                        <Card className="bg-zinc-900 text-white">
+                          <CardContent className="p-6">
+                            <div className="flex justify-between items-start mb-6">
+                              <img src="/visa.webp" alt="Visa" className="h-8" />
+                            </div>
+                            <div className="space-y-1">
+                              <p className="text-gray-400">Bank of Hacklytics</p>
+                              <p className="font-mono">4512 •••• •••• 1773</p>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
                       <div>
-                        {/* Card Status aligned to the right */}
-                        <div className="text-right mb-4">
-                          <span className="text-sm text-muted-foreground">
-                            Card Status:{" "}
-                          </span>
-                          <span className="font-bold flex items-center justify-end gap-2">
+                        <div className="mb-4 text-right">
+                          <span className="text-sm text-muted-foreground">Card Status: </span>
+                          <span className="flex items-center justify-end gap-2 font-bold">
                             {customer ? (
                               customer.is_locked.toLowerCase() === "true" ? (
                                 <>
-                                  <LockIcon className="h-4 w-4 text-red-500" />
+                                  <LockIcon className="w-4 h-4 text-red-500" />
                                   Locked
                                 </>
                               ) : (
                                 <>
-                                  <UnlockIcon className="h-4 w-4 text-green-500" />
+                                  <UnlockIcon className="w-4 h-4 text-green-500" />
                                   Unlocked
                                 </>
                               )
@@ -329,11 +363,12 @@ export default function DashboardPage() {
                               <div className="text-red-500">
                                 -${recentTransaction.amt.toFixed(2)}
                               </div>
-                              <div className="text-sm text-red-500">
+                              <div className="text-sm">
                                 Risk:{" "}
-                                {recentTransaction.is_fraud.toLowerCase() === "true"
-                                  ? "high"
-                                  : "low"}
+                                {(() => {
+                                  const score = parseFloat(recentTransaction.is_fraud);
+                                  return getFraudRisk(score);
+                                })()}
                               </div>
                             </div>
                           </div>
@@ -344,15 +379,23 @@ export default function DashboardPage() {
                     </div>
                   </CardContent>
                 </Card>
+                <Card className="mt-6">
+                  <CardHeader>
+                    <CardTitle>Voice Verification</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <AudioRecorder />
+                  </CardContent>
+                </Card>
               </div>
 
               {/* Live Transcript */}
-              <aside className="w-full border-l p-6">
+              <aside className="w-full p-6 border-l">
                 <div className="space-y-2">
                   <h2 className="text-lg font-semibold">Live Transcript</h2>
                   <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 rounded-full bg-muted" />
-                    <div className="h-4 w-48 rounded bg-muted" />
+                    <div className="w-10 h-10 rounded-full bg-muted" />
+                    <div className="w-48 h-4 rounded bg-muted" />
                   </div>
                 </div>
               </aside>

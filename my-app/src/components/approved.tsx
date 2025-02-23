@@ -15,8 +15,14 @@ export default function TransactionApproved() {
           <br />
           APPROVED!
         </h1>
+
+        <button
+          onClick={() => window.location.href = '/'}
+          className="px-8 py-3 bg-[#083D23] hover:bg-[#062D1A] transition-colors text-white font-semibold rounded-sm"
+        >
+          RETURN HOME
+        </button>
       </div>
     </div>
   )
 }
-

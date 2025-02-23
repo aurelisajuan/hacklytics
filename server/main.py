@@ -20,6 +20,9 @@ import io
 from PIL import Image
 import numpy as np
 from db import reset_db, insert_trans, update_trans, get_cust, set_locked
+import base64
+import io
+from pydub import AudioSegment
 
 load_dotenv(override=True)
 app = FastAPI()
@@ -62,11 +65,11 @@ async def upload_image(request: Request):
         distances = face_recognition.face_distance(known_encodings, unknown_encoding)
 
         if distances.mean() < 0.4:
-            await update_trans(cc_num, {"is_fraud": "no"})
+            # Set account lock status to "no"
+            await set_locked(cc_num, "no")
+
             # Match found
-            return JSONResponse(
-                status_code=200, content={"success": "Image uploaded successfully"}
-            )
+            return JSONResponse(status_code=200, content={"success": "Match Found"})
         else:
             return JSONResponse(status_code=400, content={"error": "No match found"})
 
@@ -107,6 +110,7 @@ async def get_transaction(request: Request):
                 int(details.get("merch_lat")),
                 int(details.get("merch_long")),
                 "false",
+                risk_factor=float(risk_score),
             )
 
             return JSONResponse(
@@ -126,8 +130,11 @@ async def get_transaction(request: Request):
                 int(details.get("merch_lat")),
                 int(details.get("merch_long")),
                 "pending",
+                risk_factor=float(risk_score),
             )
             print("Transaction inserted:", data)
+
+            transaction_num = data[0].get("trans_num")
 
             customer = await get_cust(int(data[0].get("cc_num")))
             print("Customer:", customer)
@@ -164,6 +171,7 @@ async def get_transaction(request: Request):
                 int(details.get("merch_lat")),
                 int(details.get("merch_long")),
                 "pending",
+                risk_factor=float(risk_score),
             )
 
             customer = await get_cust(int(data[0].get("cc_num")))
@@ -272,6 +280,42 @@ async def websocket_handler(websocket: WebSocket, call_id: str):
         await websocket.close(1011, "Server error")
     finally:
         print(f"LLM WebSocket connection closed for {call_id}")
+
+
+@app.post("/audio")
+async def process_audio(request: Request):
+    try:
+        # Get the audio file from the request
+        form = await request.form()
+        audio_file = form.get("audio")
+
+        if not audio_file:
+            return JSONResponse(
+                status_code=400, content={"error": "No audio file provided"}
+            )
+
+        # Read the contents of the uploaded file
+        audio_data = await audio_file.read()
+
+        # Use an in-memory bytes buffer
+        audio_io = io.BytesIO(audio_data)
+
+        # Load the audio using pydub
+        audio_segment = AudioSegment.from_wav(audio_io)
+
+        # Export the audio as a WAV file
+        audio_segment.export("output.wav", format="wav")
+
+        return JSONResponse(
+            status_code=200, content={"message": "Audio file processed successfully"}
+        )
+
+    except Exception as e:
+        print(f"Error in process_audio: {e}")
+        return JSONResponse(
+            status_code=500, content={"error": f"Error processing audio: {str(e)}"}
+        )
+
 
 
 @app.delete("/reset")
