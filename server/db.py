@@ -1,6 +1,7 @@
 import os
 import uuid
 import csv
+import asyncio
 from datetime import datetime
 from supabase import create_async_client, AsyncClient
 from dotenv import load_dotenv
@@ -10,6 +11,7 @@ load_dotenv(override=True)
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")
 
+# supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 async def insert_trans(
     cc_num: str,
@@ -295,6 +297,8 @@ async def reset_db() -> dict:
             "./experiments/sample_data/base.csv", mode="r", newline=""
         ) as csvfile:
             reader = csv.DictReader(csvfile)
+            # Print CSV schema (the header field names)
+            print("CSV schema (field names):", reader.fieldnames)
             # Convert CSV rows to a list of dictionaries
             base_data = [row for row in reader]
 
@@ -321,3 +325,6 @@ async def reset_db() -> dict:
         error_message = f"Exception in reset_database: {e}"
         print(error_message)
         return {"error": error_message}
+
+result = asyncio.run(reset_db())
+print("reset_db result:", result)
