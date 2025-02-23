@@ -56,7 +56,7 @@ interface Transaction {
   amt: number;
   merch_lat: number;
   merch_long: number;
-  is_fraud: string;
+  is_fraud: string; // Expected to be a numeric string representing the fraud score (0 to 1)
   cc_num: string;
   user_id: string;
 }
@@ -64,6 +64,13 @@ interface Transaction {
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
+
+// Helper function to classify fraud risk based on score
+function getFraudRisk(score: number): string {
+  if (score < 0.5) return "No Fraud";
+  if (score < 0.7) return "Low Fraud";
+  return "High Fraud";
+}
 
 // Sidebar Component: Combines Banklytics branding and navigation
 function Sidebar({
@@ -157,24 +164,70 @@ export default function DashboardPage() {
   }, []);
 
   // Fetch the most recent transaction for the customer based on the credit card number (cc)
-  useEffect(() => {
-    async function fetchTransaction() {
-      if (!customer) return;
-      const { data, error } = await supabase
-        .from("transaction")
-        .select("*")
-        .eq("cc_num", customer.cc)
-        .order("trans_date", { ascending: false })
-        .limit(1)
-        .single();
-      if (error) {
-        console.error("Error fetching transaction data:", error);
-        return;
-      }
-      setRecentTransaction(data);
+  async function fetchTransaction() {
+    if (!customer) return;
+    const { data, error } = await supabase
+      .from("transaction")
+      .select("*")
+      .eq("cc_num", customer.cc)
+      .order("trans_date", { ascending: false })
+      .limit(1)
+      .single();
+    if (error) {
+      console.error("Error fetching transaction data:", error);
+      return;
     }
-    fetchTransaction();
+    setRecentTransaction(data);
+  }
+
+  // Initially fetch transaction when customer data is available
+  useEffect(() => {
+    if (customer) {
+      fetchTransaction();
+    }
   }, [customer]);
+
+  // Handler for reset button click
+  // async function handleReset() {
+  //   // Call the backend function reset_db via Supabase RPC
+  //   const { error } = await supabase.rpc("reset_db");
+  //   if (error) {
+  //     console.error("Error resetting database:", error);
+  //     return;
+  //   }
+  //   // After resetting, re-fetch the latest transaction for Lisa Lin
+  //   await fetchTransaction();
+  // }
+
+async function handleReset() {
+  try {
+    // Call your Python backend API route that triggers reset_db
+    const pythonBackendUrl = process.env.PYTHON_BACKEND_URL;
+    if (!pythonBackendUrl) {
+      console.error("Python backend URL is not configured.");
+    }
+
+    // Make a DELETE request to your Python backend's reset endpoint
+    const response = await fetch(`${pythonBackendUrl}/reset`, {
+    method: "DELETE",
+    });
+
+    const result = await response.json();
+
+
+    if (!response.ok) {
+      console.error("Reset failed:", result.error);
+      return;
+    }
+
+    console.log("Reset succeeded:", result.success);
+    // After resetting, re-fetch the latest transaction for Lisa Lin
+    await fetchTransaction();
+  } catch (error) {
+    console.error("Error calling the reset API route:", error);
+  }
+}
+
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
@@ -257,6 +310,7 @@ export default function DashboardPage() {
                   <Button
                     variant="outline"
                     className="rounded-full border-gray-500 text-gray-500"
+                    onClick={handleReset}
                   >
                     <span className="mr-1.5 h-2 w-2 rounded-full bg-gray-500" />
                     Reset
@@ -329,11 +383,12 @@ export default function DashboardPage() {
                               <div className="text-red-500">
                                 -${recentTransaction.amt.toFixed(2)}
                               </div>
-                              <div className="text-sm text-red-500">
+                              <div className="text-sm">
                                 Risk:{" "}
-                                {recentTransaction.is_fraud.toLowerCase() === "true"
-                                  ? "high"
-                                  : "low"}
+                                {(() => {
+                                  const score = parseFloat(recentTransaction.is_fraud);
+                                  return getFraudRisk(score);
+                                })()}
                               </div>
                             </div>
                           </div>
