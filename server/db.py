@@ -1,5 +1,6 @@
 import os
 import uuid
+import csv
 from datetime import datetime
 from supabase import create_client, Client
 from dotenv import load_dotenv
@@ -255,5 +256,53 @@ async def set_locked(cc: str, is_locked: bool):
 
     except Exception as e:
         error_message = f"Exception while setting locked status for cc {cc}: {e}"
+        print(error_message)
+        return {"error": error_message}
+
+
+async def reset_db() -> dict:
+    """
+    Reset the database by clearing the 'transactions' table
+    and bulk-loading data from base.csv.
+    
+    Returns:
+        dict: Outcome message describing success or any errors.
+    """
+    try:
+        # Clear the transactions table (delete all rows)
+        print("Clearing transactions table...")
+        del_response = await supabase.table("transaction").delete().neq("trans_num", "").execute()
+        if del_response.error:
+            error_message = f"Error deleting transactions: {del_response.error}"
+            print(error_message)
+            return {"error": error_message}
+        print("Transactions table cleared:", del_response.data)
+        
+        # Load data from base.csv
+        print("Loading data from base.csv...")
+        with open("./experiments/sample_data/base.csv", mode="r", newline="") as csvfile:
+            reader = csv.DictReader(csvfile)
+            # Convert CSV rows to a list of dictionaries
+            base_data = [row for row in reader]
+        
+        if not base_data:
+            message = "No data found in base.csv."
+            print(message)
+            return {"error": message}
+        
+        # Insert CSV data into transactions table
+        print("Inserting data into transactions table...")
+        insert_response = await supabase.table("transaction").insert(base_data).execute()
+        if insert_response.error:
+            error_message = f"Error inserting base.csv data: {insert_response.error}"
+            print(error_message)
+            return {"error": error_message}
+        
+        success_message = "Database reset successfully; base.csv data loaded."
+        print(success_message)
+        return {"success": success_message, "data": insert_response.data}
+    
+    except Exception as e:
+        error_message = f"Exception in reset_database: {e}"
         print(error_message)
         return {"error": error_message}

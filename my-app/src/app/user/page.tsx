@@ -24,21 +24,11 @@ function Sidebar({ activeLink, setActiveLink }: { activeLink: string; setActiveL
     <aside className="h-full w-60 border-r border-gray-200 bg-white">
       {/* Banklytics Branding */}
       <div className="px-6 py-4">
-        <div className="flex items-center gap-3">
-          <Image
-            src="/logo.png" // Ensure your logo file is in the /public folder
-            alt="Banklytics Logo"
-            width={40}
-            height={40}
-            className="object-contain"
-          />
-          <span className="text-2xl font-semibold">Banklytics</span>
-        </div>
       </div>
       {/* Navigation Links */}
-      <nav className="flex h-full flex-col p-4">
+      <nav className="flex flex-col p-4 h-16">
         <Link
-          href="#"
+          href="/"
           onClick={() => setActiveLink("dashboard")}
           className={`mb-1 flex items-center gap-2 rounded-lg px-4 py-2 ${
             activeLink === "dashboard"
@@ -81,6 +71,17 @@ function Sidebar({ activeLink, setActiveLink }: { activeLink: string; setActiveL
 function TopBar() {
   return (
     <header className="flex h-16 items-center border-b border-gray-200 bg-white px-6">
+      <div className="flex items-center gap-3">
+        <Image
+          src="/logo.png" // Ensure your logo file is in the /public folder
+          alt="Banklytics Logo"
+          width={40}
+          height={40}
+          className="object-contain"
+        />
+        <span className="text-2xl font-semibold">Banklytics</span>
+      </div>
+
       <h1 className="text-2xl font-semibold">Dashboard</h1>
       <div className="ml-auto flex items-center gap-4">
         <div className="relative">
