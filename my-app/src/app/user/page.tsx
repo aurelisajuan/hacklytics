@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import {
   BellIcon,
   HomeIcon,
@@ -12,7 +13,6 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useState } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,6 +23,29 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { createClient } from "@supabase/supabase-js";
+
+// Define the Customer interface
+interface Customer {
+  id?: string;
+  first_name: string;
+  last_name: string;
+  cc: string;
+  street: string;
+  city: string;
+  state: string;
+  zip: number;
+  lat: number;
+  long: number;
+  job: string;
+  dob: string;
+  gender: string;
+  is_locked: string;
+}
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_KEY || "";
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Sidebar Component: Combines Banklytics branding and navigation
 function Sidebar({
@@ -94,6 +117,23 @@ function Sidebar({
 export default function DashboardPage() {
   // Initialize active link as "user-profiles" so the User Profiles nav item is highlighted on page load.
   const [activeLink, setActiveLink] = useState("user-profiles");
+  const [customer, setCustomer] = useState<Customer | null>(null);
+
+  useEffect(() => {
+    async function fetchCustomer() {
+      const { data, error } = await supabase
+        .from("customer")
+        .select("*")
+        .limit(1)
+        .single();
+      if (error) {
+        console.error("Error fetching customer data:", error);
+        return;
+      }
+      setCustomer(data);
+    }
+    fetchCustomer();
+  }, []);
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
@@ -144,29 +184,41 @@ export default function DashboardPage() {
                         <div className="text-sm text-muted-foreground">
                           Name
                         </div>
-                        <div className="text-2xl font-bold">Lisa Lin</div>
+                        <div className="text-2xl font-bold">
+                          {customer
+                            ? `${customer.first_name} ${customer.last_name}`
+                            : "Loading..."}
+                        </div>
                       </div>
                       <div className="grid gap-4 md:grid-cols-2">
                         <div>
                           <div className="text-sm text-muted-foreground">
                             Date of Birth
                           </div>
-                          <div>YYYY-MM-DD</div>
+                          <div>
+                            {customer ? customer.dob : "YYYY-MM-DD"}
+                          </div>
                         </div>
                         <div>
                           <div className="text-sm text-muted-foreground">
                             Occupation
                           </div>
-                          <div>YYYY-MM-DD</div>
+                          <div>
+                            {customer ? customer.job : "Occupation"}
+                          </div>
                         </div>
                       </div>
                       <div>
                         <div className="text-sm text-muted-foreground">
                           Address
                         </div>
-                        <div>Street Name</div>
-                        <div>City</div>
-                        <div>State, Zip Code</div>
+                        <div>{customer ? customer.street : "Street Name"}</div>
+                        <div>{customer ? customer.city : "City"}</div>
+                        <div>
+                          {customer
+                            ? `${customer.state}, ${customer.zip}`
+                            : "State, Zip Code"}
+                        </div>
                       </div>
                     </div>
                   </CardContent>
