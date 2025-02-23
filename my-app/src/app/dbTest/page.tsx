@@ -15,9 +15,8 @@ import { OrbitControls } from '@react-three/drei'
 
 import dynamic from 'next/dynamic'
 
-
-
 interface Customer {
+    id?: string;
     first_name: string;
     last_name: string;
     cc: string;
@@ -51,38 +50,10 @@ const RealtimeUpdates: React.FC = () => {
   const [updates, setUpdates] = useState<Transaction[]>([]);
   const MapHeatmap = dynamic(() => import('../../components/map'), { ssr: false })
 
-
-  const fetchTransactions = async () => {
-    const { data, error } = await supabase.from("transaction").select("*");
-    if (error) {
-      console.error("Fetch transactions error:", error);
-      return;
-    }
-    setUpdates(data as Transaction[]);
-  };
-
-  // Delete all rows from the transaction and customer tables.
-  // const clearDatabase = async () => {
-  //     const { error: transError } = await supabase
-  //     .from('transaction')
-  //     .delete()
-  //     .neq('id', 0);
-  //     if (transError) {
-  //     console.log("Error deleting transactions:", transError);
-  //     }
-  //     const { error: custError } = await supabase
-  //     .from('customer')
-  //     .delete()
-  //     .neq('id', 0);
-  //     if (custError) {
-  //     console.log("Error deleting customers:", custError);
-  //     }
-  // };
-
   const customers: Customer[] = [
     {
       first_name: "Bill",
-      last_name: "Zhang",
+      last_name: "Zhang", 
       cc: "3502088871723054",
       street: "123 San Jose Ave",
       city: "San Jose",
@@ -93,13 +64,13 @@ const RealtimeUpdates: React.FC = () => {
       job: "AI Engineer",
       dob: "2002-09-27",
       gender: "M",
-      is_locked: false,
+      is_locked: "false"
     },
     {
       first_name: "Warren",
       last_name: "Yun",
       cc: "3534330126107879",
-      street: "456 Boston Rd",
+      street: "456 Boston Rd", 
       city: "Boston",
       state: "MA",
       zip: 92118,
@@ -108,14 +79,14 @@ const RealtimeUpdates: React.FC = () => {
       job: "Robotic Engineer",
       dob: "2006-03-06",
       gender: "M",
-      is_locked: false,
+      is_locked: "false"
     },
     {
       first_name: "Lia",
       last_name: "Lin",
       cc: "6538441737335434",
       street: "789 Los Angeles St",
-      city: "Los Angeles",
+      city: "Los Angeles", 
       state: "CA",
       zip: 90001,
       lat: 34.0522,
@@ -123,7 +94,7 @@ const RealtimeUpdates: React.FC = () => {
       job: "Software Engineer",
       dob: "2004-05-24",
       gender: "F",
-      is_locked: false,
+      is_locked: "false"
     },
     {
       first_name: "Lisa",
@@ -131,15 +102,15 @@ const RealtimeUpdates: React.FC = () => {
       cc: "4586810168620942",
       street: "321 Irvine Blvd",
       city: "Irvine",
-      state: "CA",
+      state: "CA", 
       zip: 92618,
       lat: 33.6839,
       long: -117.7947,
       job: "Frontend Engineer",
       dob: "2004-05-24",
       gender: "F",
-      is_locked: false,
-    },
+      is_locked: "false"
+    }
   ];
 
   const transactionsData = [
@@ -196,7 +167,7 @@ const RealtimeUpdates: React.FC = () => {
       ],
     },
     {
-      cc_num: "6538441737335434",
+      cc_num: "6538441737335434", 
       transactions: [
         {
           merchant: "fraud_Prosacco LLC",
@@ -249,13 +220,22 @@ const RealtimeUpdates: React.FC = () => {
     },
   ];
 
+  const fetchTransactions = async () => {
+    const { data, error } = await supabase.from("transaction").select("*");
+    if (error) {
+      console.error("Fetch transactions error:", error);
+      return;
+    }
+    setUpdates(data as Transaction[]);
+  };
+
   const uploadBulkData = async () => {
     // Insert Customers First
     for (const customer of customers) {
       const { data: existingCustomer, error: customerFetchError } =
         await supabase
           .from("customer")
-          .select("cc")
+          .select("*")
           .eq("cc", customer.cc)
           .maybeSingle();
 
@@ -278,82 +258,27 @@ const RealtimeUpdates: React.FC = () => {
     // Wait for Customers to be Inserted Before Transactions
     await new Promise((resolve) => setTimeout(resolve, 3000));
 
-    const customers: Customer[] = [
-        {
-            first_name: "Bill",
-            last_name: "Zhang",
-            cc: "3502088871723054",
-            street: "123 San Jose Ave",
-            city: "San Jose",
-            state: "CA",
-            zip: 95112,
-            lat: 37.3382,
-            long: -121.8863,
-            job: "AI Engineer",
-            dob: "2002-09-27",
-            gender: "M",
-            is_locked: "no",
-        },
-        {
-            first_name: "Warren",
-            last_name: "Yun",
-            cc: "3534330126107879",
-            street: "456 Boston Rd",
-            city: "Boston",
-            state: "MA",
-            zip: 92118,
-            lat: 42.3601,
-            long: -71.0589,
-            job: "Robotic Engineer",
-            dob: "2006-03-06",
-            gender: "M",
-            is_locked: "no",
-        },
-        {
-            first_name: "Lia",
-            last_name: "Lin",
-            cc: "6538441737335434",
-            street: "789 Los Angeles St",
-            city: "Los Angeles",
-            state: "CA",
-            zip: 90001,
-            lat: 34.0522,
-            long: -118.2437,
-            job: "Software Engineer",
-            dob: "2004-05-24",
-            gender: "F",
-            is_locked: "no",
-        },
-        {
-            first_name: "Lisa",
-            last_name: "Lin",
-            cc: "4586810168620942",
-            street: "321 Irvine Blvd",
-            city: "Irvine",
-            state: "CA",
-            zip: 92618,
-            lat: 33.6839,
-            long: -117.7947,
-            job: "Frontend Engineer",
-            dob: "2004-05-24",
-            gender: "F",
-            is_locked: "no",
-        },
-    ];
+    // Insert Transactions
+    for (const userData of transactionsData) {
+      const { data: customerExists, error: customerError } = await supabase
+        .from("customer")
+        .select("id")
+        .eq("cc", userData.cc_num)
+        .single();
 
-      if (!customerExists) {
+      if (customerError || !customerExists) {
         console.error(
-          `Customer ${user.cc_num} not found! Skipping transaction.`
+          `Customer ${userData.cc_num} not found! Skipping transaction.`
         );
         continue;
       }
 
-      for (const transaction of user.transactions) {
+      for (const transaction of userData.transactions) {
         const { data: existingTransaction, error: transactionCheckError } =
           await supabase
             .from("transaction")
             .select("trans_num")
-            .eq("cc_num", user.cc_num)
+            .eq("cc_num", userData.cc_num)
             .eq("merchant", transaction.merchant)
             .eq("amt", transaction.amt)
             .maybeSingle();
@@ -367,8 +292,9 @@ const RealtimeUpdates: React.FC = () => {
           console.log(
             `Transaction already exists for ${transaction.merchant} with amount ${transaction.amt}, skipping...`
           );
-          continue; // Skip inserting the duplicate transaction
+          continue;
         }
+
         const transTime = new Date().toISOString();
         const newTransaction: Transaction = {
           ...transaction,
@@ -376,8 +302,8 @@ const RealtimeUpdates: React.FC = () => {
           trans_date: transTime.split("T")[0],
           trans_time: transTime,
           is_fraud: "no",
-          cc_num: user.cc_num,
-          user_id: customerExists.id,
+          cc_num: userData.cc_num,
+          user_id: customerExists.id
         };
 
         const { error: transactionInsertError } = await supabase
@@ -409,7 +335,7 @@ const RealtimeUpdates: React.FC = () => {
         (payload) => {
           console.log("Realtime update received:", payload);
           const newUpdate = payload.new as Transaction;
-          setUpdates((prev) => {
+          setUpdates((prev: Transaction[]) => {
             if (
               prev.find((update) => update.trans_num === newUpdate.trans_num)
             ) {
@@ -463,11 +389,8 @@ const RealtimeUpdates: React.FC = () => {
           </div>
         ))
       )}
-  <div style={{ width: '100vw', height: '100vh' }}>
-      <MapHeatmap />
-    </div>  
     </div>
   );
-};
+}
 
 export default RealtimeUpdates;
