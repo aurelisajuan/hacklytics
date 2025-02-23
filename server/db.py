@@ -2,14 +2,13 @@ import os
 import uuid
 import csv
 from datetime import datetime
-from supabase import create_client, Client
+from supabase import create_async_client, AsyncClient
 from dotenv import load_dotenv
 
 load_dotenv(override=True)
 
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 
 async def insert_trans(
@@ -223,7 +222,7 @@ async def set_locked(cc: str, is_locked: str):
 
     Parameters:
         cc (str): The credit card number of the customer.
-        is_locked (str): The desired locked status ("no", "yes", or "pending").
+        is_locked (str): The desired locked status ("no", "yes", "pending high", or "pending low").
 
     Returns:
         dict: Outcome of the update operation, e.g.,
@@ -236,12 +235,14 @@ async def set_locked(cc: str, is_locked: str):
                 "error": "No customer found with cc 1234 to update."
             }
     """
-    valid_states = {"no", "yes", "pending"}
+    valid_states = {"no", "yes", "pending high", "pending low"}
     if is_locked not in valid_states:
-        error_message = f"Invalid state for is_locked: {is_locked}. Must be one of {valid_states}"
+        error_message = (
+            f"Invalid state for is_locked: {is_locked}. Must be one of {valid_states}"
+        )
         print(error_message)
         return {"error": error_message}
-    
+
     try:
         response = (
             await supabase.table("customer")
@@ -270,44 +271,52 @@ async def reset_db() -> dict:
     """
     Reset the database by clearing the 'transactions' table
     and bulk-loading data from base.csv.
-    
+
     Returns:
         dict: Outcome message describing success or any errors.
     """
     try:
+        supabase: AsyncClient = await create_async_client(SUPABASE_URL, SUPABASE_KEY)
+
         # Clear the transactions table (delete all rows)
         print("Clearing transactions table...")
-        del_response = await supabase.table("transaction").delete().neq("trans_num", "").execute()
-        if del_response.error:
+        del_response = (
+            await supabase.table("transaction").delete().neq("trans_num", "").execute()
+        )
+        if hasattr(del_response, "error") and del_response.error:
             error_message = f"Error deleting transactions: {del_response.error}"
             print(error_message)
             return {"error": error_message}
         print("Transactions table cleared:", del_response.data)
-        
+
         # Load data from base.csv
         print("Loading data from base.csv...")
-        with open("./experiments/sample_data/base.csv", mode="r", newline="") as csvfile:
+        with open(
+            "./experiments/sample_data/base.csv", mode="r", newline=""
+        ) as csvfile:
             reader = csv.DictReader(csvfile)
             # Convert CSV rows to a list of dictionaries
             base_data = [row for row in reader]
-        
+
         if not base_data:
             message = "No data found in base.csv."
             print(message)
             return {"error": message}
-        
+
         # Insert CSV data into transactions table
         print("Inserting data into transactions table...")
-        insert_response = await supabase.table("transaction").insert(base_data).execute()
-        if insert_response.error:
+        insert_response = (
+            await supabase.table("transaction").insert(base_data).execute()
+        )
+        if hasattr(insert_response, "error") and insert_response.error:
             error_message = f"Error inserting base.csv data: {insert_response.error}"
             print(error_message)
             return {"error": error_message}
-        
+
         success_message = "Database reset successfully; base.csv data loaded."
         print(success_message)
         return {"success": success_message, "data": insert_response.data}
-    
+
     except Exception as e:
         error_message = f"Exception in reset_database: {e}"
         print(error_message)
