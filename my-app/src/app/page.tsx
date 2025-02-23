@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import FraudAlert from "@/components/alert";
 import Profile from "@/components/profile";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, RealtimeChannel } from "@supabase/supabase-js";
 
 // Define the Customer interface
 interface Customer {
@@ -49,6 +49,8 @@ const Home = () => {
 
   // Fetch Lisa Lin's customer record and set up realtime subscriptions
   useEffect(() => {
+    let customerChannel: RealtimeChannel;
+
     async function fetchCustomer() {
       const { data, error } = await supabase
         .from("customer")
@@ -76,7 +78,7 @@ const Home = () => {
       }
 
       // Set up realtime subscriptions
-      const customerChannel = supabase
+      customerChannel = supabase
         .channel('customer-channel')
         .on(
           'postgres_changes',
@@ -92,65 +94,46 @@ const Home = () => {
           }
         )
         .subscribe();
+    }
+
+    fetchCustomer();
 
     // Clean up the subscription on unmount or customer change
     return () => {
-      supabase.removeChannel(customerChannel);
+      if (customerChannel) {
+        supabase.removeChannel(customerChannel);
+      }
     };
-  }, [customer]);
+  }, []);
 
   // Fetch transactions for Lisa Lin using her credit card (cc) number
   useEffect(() => {
     if (!customer) return;
 
-    // Create a channel for realtime updates
-    const channel = supabase
-      .channel("transactions-channel")
+    const transactionChannel: RealtimeChannel = supabase
+      .channel('transactions-channel')
       .on(
-        "postgres_changes",
+        'postgres_changes',
         {
-          event: "INSERT",
-          schema: "public",
-          table: "transaction",
+          event: 'INSERT',
+          schema: 'public',
+          table: 'transaction',
           filter: `cc_num=eq.${customer.cc}`,
         },
         (payload) => {
-          console.log("New transaction received:", payload.new);
-          setTransactions((prevTransactions) => [
-            payload.new,
-            ...prevTransactions,
-          ]);
+          console.log('New transaction received:', payload.new);
+          setTransactions((prevTransactions) => [payload.new as Transaction, ...prevTransactions]);
         }
       )
       .subscribe();
-      const transactionChannel = supabase
-        .channel('transactions-channel')
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'transaction',
-            filter: `cc_num=eq.${data.cc}`,
-          },
-          (payload) => {
-            console.log('New transaction received:', payload.new);
-            setTransactions((prevTransactions) => [payload.new as Transaction, ...prevTransactions]);
-          }
-        )
-        .subscribe();
 
-      // Clean up subscriptions on unmount
-      return () => {
-        supabase.removeChannel(customerChannel);
+    // Clean up subscriptions on unmount
+    return () => {
+      if (transactionChannel) {
         supabase.removeChannel(transactionChannel);
-      };
-    }
-
-    fetchCustomer();
-  }, []);
-
-  console.log(customer);
+      }
+    };
+  }, [customer]);
 
   if (!customer) return null;
 
@@ -159,7 +142,6 @@ const Home = () => {
   } else {
     return <FraudAlert mode={page_map[customer.is_locked]} cc_num={customer.cc} />;
   }
-
 };
 
 export default Home;

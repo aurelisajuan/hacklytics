@@ -9,11 +9,9 @@ import {
   UserCircle,
   LockIcon,
   UnlockIcon,
-  ClockIcon,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -98,8 +96,8 @@ function Sidebar({
           href="/admin"
           onClick={() => setActiveLink("dashboard")}
           className={`mb-1 flex items-center gap-2 rounded-lg px-4 py-2 ${activeLink === "dashboard"
-              ? "bg-[#E5F3FF] text-sky-600"
-              : "text-gray-500 hover:bg-[#E5F3FF] hover:text-sky-600"
+            ? "bg-[#E5F3FF] text-sky-600"
+            : "text-gray-500 hover:bg-[#E5F3FF] hover:text-sky-600"
             }`}
         >
           <HomeIcon className="w-5 h-5" />
@@ -109,8 +107,8 @@ function Sidebar({
           href="/user"
           onClick={() => setActiveLink("user-profiles")}
           className={`mb-1 flex items-center gap-2 rounded-lg px-4 py-2 ${activeLink === "user-profiles"
-              ? "bg-[#E5F3FF] text-sky-600"
-              : "text-gray-500 hover:bg-[#E5F3FF] hover:text-sky-600"
+            ? "bg-[#E5F3FF] text-sky-600"
+            : "text-gray-500 hover:bg-[#E5F3FF] hover:text-sky-600"
             }`}
         >
           <UserCircle className="w-5 h-5" />
@@ -120,8 +118,8 @@ function Sidebar({
           href="#"
           onClick={() => setActiveLink("settings")}
           className={`flex items-center gap-2 rounded-lg px-4 py-2 ${activeLink === "settings"
-              ? "bg-[#E5F3FF] text-sky-600"
-              : "text-gray-500 hover:bg-[#E5F3FF] hover:text-sky-600"
+            ? "bg-[#E5F3FF] text-sky-600"
+            : "text-gray-500 hover:bg-[#E5F3FF] hover:text-sky-600"
             }`}
         >
           <Settings className="w-5 h-5" />
