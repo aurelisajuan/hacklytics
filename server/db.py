@@ -4,16 +4,14 @@ import csv
 import asyncio
 from datetime import datetime
 from supabase import create_async_client, AsyncClient
-from dotenv import load_dotenv
-
 import supabase
+from dotenv import load_dotenv
 
 load_dotenv(override=True)
 
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")
 
-# supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 async def insert_trans(
     cc_num: str,
@@ -34,11 +32,13 @@ async def insert_trans(
         amt (float): Transaction amount
         merch_lat (float): Merchant latitude
         merch_long (float): Merchant longitude
+        is_fraud (str): Fraud status
 
     Returns:
         dict: Success or error message.
     """
     try:
+        supabase: AsyncClient = await create_async_client(SUPABASE_URL, SUPABASE_KEY)
         print("Checking for customer with cc_num:", cc_num)
         # customer_query = (
         #     supabase.table("customer")
@@ -89,21 +89,17 @@ async def insert_trans(
         # )
 
         insert_response = (
-            await supabase.table("transactions").insert(new_transaction).execute()
+            await supabase.table("transaction").insert(new_transaction).execute()
         )
 
-        response_data = insert_response.get("data")
-        if not response_data:
+        # response_data = insert_response.get("data")
+        if not insert_response.data:
             return {
                 "error": "No data returned from insert. Possibly an error occurred."
             }
 
         print("Insert response:", insert_response)
 
-        if insert_response.error:
-            error_message = f"Error inserting transaction: {insert_response.error}"
-            print(error_message)
-            return {"error": error_message}
 
         success_message = f"Transaction inserted successfully: {new_transaction}"
         print(success_message)
@@ -113,19 +109,7 @@ async def insert_trans(
         error_message = f"Exception in insert_trans: {e}"
         print(error_message)
         return {"error": error_message}
-
-
-# Run test
-# response = insert_trans(
-#     cc_num="3502088871723054",
-#     merchant="fraud_Altenwerth-Kilback",
-#     category="home",
-#     amt=27.12,
-#     merch_lat=38.0298,
-#     merch_long=-77.0793
-# )
-# print("Final insert_trans response:", response)
-
+    
 
 async def update_trans(trans_num: str, updated_fields: dict) -> dict:
     """
@@ -154,6 +138,7 @@ async def update_trans(trans_num: str, updated_fields: dict) -> dict:
         #     .eq("trans_num", trans_num)
         #     .execute()
         # )
+        supabase: AsyncClient = await create_async_client(SUPABASE_URL, SUPABASE_KEY)
         response = (
             await supabase.table("transaction")
             .update(updated_fields)
@@ -173,14 +158,6 @@ async def update_trans(trans_num: str, updated_fields: dict) -> dict:
         return {"error": f"Exception while updating transaction {trans_num}: {e}"}
 
 
-# result = update_transaction(
-#     trans_num="cdcd57ea-196e-4891-ab5f-e1ded62d5702",
-#     updated_fields={"category": "electronics", "amt": 129.99}
-# )
-
-# print("Update result:", result)
-
-
 async def get_cust(cc_num: str):
     """
     Retrieves customer details from the Supabase database.
@@ -192,6 +169,7 @@ async def get_cust(cc_num: str):
         dict: Customer details or an error message if not found.
     """
     try:
+        supabase: AsyncClient = await create_async_client(SUPABASE_URL, SUPABASE_KEY)
         # Query the customer table to get customer details
         # customer_query = supabase.table("customer").select("*").eq("cc", cc_num).maybe_single().execute()
         customer_query = (
@@ -214,10 +192,6 @@ async def get_cust(cc_num: str):
     except Exception as e:
         print(f"Unexpected error while retrieving customer: {e}")
         return {"error": "Internal server error", "details": str(e)}
-
-
-# result = get_cust("3502088871723054")
-# print("Get customer result:", result)
 
 
 async def set_locked(cc: str, is_locked: str):
@@ -248,6 +222,7 @@ async def set_locked(cc: str, is_locked: str):
         return {"error": error_message}
 
     try:
+        supabase: AsyncClient = await create_async_client(SUPABASE_URL, SUPABASE_KEY)
         response = (
             await supabase.table("customer")
             .update({"is_locked": is_locked})
@@ -296,13 +271,30 @@ async def reset_db() -> dict:
         # Load data from base.csv
         print("Loading data from base.csv...")
         with open(
-            "./experiments/sample_data/base.csv", mode="r", newline=""
+            "./sample_data/base.csv", mode="r", newline=""
         ) as csvfile:
             reader = csv.DictReader(csvfile)
             # Print CSV schema (the header field names)
             print("CSV schema (field names):", reader.fieldnames)
-            # Convert CSV rows to a list of dictionaries
-            base_data = [row for row in reader]
+            # Convert CSV rows to a list of dictionaries, filtering for specified rows
+
+            # Filter for only the columns we want from the CSV
+            filtered_data = []
+            for row in reader:
+                filtered_row = {
+                    'merchant': row['merchant'],
+                    'category': row['category'], 
+                    'trans_num': row['trans_num'],
+                    'trans_date': datetime.strptime(row['trans_date_trans_time'].split()[0], '%Y-%m-%d').date().isoformat(),
+                    'trans_time': datetime.strptime(row['trans_date_trans_time'], '%Y-%m-%d %H:%M:%S').isoformat(),
+                    'amt': float(row['amt']),
+                    'merch_lat': float(row['merch_lat']),
+                    'merch_long': float(row['merch_long']),
+                    'is_fraud': int(row['is_fraud']),
+                    'cc_num': row['cc_num']
+                }
+                filtered_data.append(filtered_row)
+            base_data = filtered_data
 
         if not base_data:
             message = "No data found in base.csv."
@@ -327,6 +319,3 @@ async def reset_db() -> dict:
         error_message = f"Exception in reset_database: {e}"
         print(error_message)
         return {"error": error_message}
-
-result = asyncio.run(reset_db())
-print("reset_db result:", result)
