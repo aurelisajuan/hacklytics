@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Bell, Home, Search, Settings, User2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -16,6 +16,25 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { createClient } from "@supabase/supabase-js";
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_KEY || "";
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+type Transaction = {
+  merchant: string;
+  category: string;
+  trans_num: string;
+  trans_date: string;
+  trans_time: string;
+  amt: number;
+  merch_lat: number;
+  merch_long: number;
+  is_fraud: string;
+  cc_num: string;
+  user_id: string;
+};
 
 // Sidebar Component: Combines Banklytics branding and navigation
 function Sidebar({
@@ -89,6 +108,37 @@ function Sidebar({
 
 export default function Dashboard() {
   const [activeLink, setActiveLink] = useState("dashboard");
+  // State to store realtime transaction updates
+  const [updates, setUpdates] = useState<Transaction[]>([]);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel("hacklytics")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "transaction",
+        },
+        (payload) => {
+          console.log("Realtime update received:", payload);
+          const newUpdate = payload.new as Transaction;
+          setUpdates((prev) => {
+            // Prevent duplicate entries
+            if (prev.find((update) => update.trans_num === newUpdate.trans_num)) {
+              return prev;
+            }
+            return [...prev, newUpdate];
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   return (
     <div className="flex h-screen overflow-hidden">
