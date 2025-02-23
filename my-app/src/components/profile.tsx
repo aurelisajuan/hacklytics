@@ -1,10 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import {
   Bell,
   Home,
-  MoreHorizontal,
   Send,
   Receipt,
   FileText,
@@ -12,13 +10,10 @@ import {
   User,
   Menu,
 } from "lucide-react";
-import Image from "next/image";
-import Link from "next/link";
+
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { createClient } from "@supabase/supabase-js";
 
 // Define the Customer interface
 interface Customer {
@@ -44,92 +39,12 @@ interface Transaction {
   user_id: string;
 }
 
-// Initialize Supabase client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_KEY || "";
-const supabase = createClient(supabaseUrl, supabaseKey);
+interface ProfileProps {
+  customer: Customer;
+  transactions: Transaction[];
+}
 
-export default function IPhoneBanking() {
-  const [customer, setCustomer] = useState<Customer | null>(null);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-
-  // Fetch Lisa Lin's customer record
-  useEffect(() => {
-    async function fetchCustomer() {
-      const { data, error } = await supabase
-        .from("customer")
-        .select("*")
-        .eq("first_name", "Lisa")
-        .eq("last_name", "Lin")
-        .single();
-      if (error) {
-        console.error("Error fetching customer:", error);
-        return;
-      }
-      setCustomer(data);
-    }
-    fetchCustomer();
-  }, []);
-
-  // Fetch initial transactions for Lisa Lin using her credit card (cc) number
-  useEffect(() => {
-    async function fetchTransactions() {
-      if (!customer) return;
-      const { data, error } = await supabase
-        .from("transaction")
-        .select("*")
-        .eq("cc_num", customer.cc)
-        .order("trans_date", { ascending: false });
-      if (error) {
-        console.error("Error fetching transactions:", error);
-        return;
-      }
-      setTransactions(data || []);
-    }
-    fetchTransactions();
-  }, [customer]);
-
-  // Realtime subscription for transactions filtered by customer's credit card number
-  useEffect(() => {
-    if (!customer) return;
-
-    // Create a realtime channel that listens to all changes for transactions with the customer's cc
-    const channel = supabase
-      .channel("transactions-realtime")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "transaction",
-          filter: `cc_num=eq.${customer.cc}`,
-        },
-        (payload) => {
-          // When a new transaction is inserted or updated, update state
-          if (payload.eventType === "INSERT") {
-            setTransactions((prev) => [payload.new as Transaction, ...prev]);
-          } else if (payload.eventType === "UPDATE") {
-            setTransactions((prev) =>
-              prev.map((tx) =>
-                tx.trans_num === (payload.new as Transaction).trans_num
-                  ? (payload.new as Transaction)
-                  : tx
-              )
-            );
-          } else if (payload.eventType === "DELETE") {
-            setTransactions((prev) =>
-              prev.filter((tx) => tx.trans_num !== payload.old.trans_num)
-            );
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [customer]);
-
+export default function Profile({ customer, transactions }: ProfileProps) {
   return (
     <div className="max-h-screen bg-gray-100 flex items-center justify-center p-4">
       {/* Set the phone container height to h-screen so it fills the viewport */}
