@@ -458,8 +458,19 @@ const RiskGaugeWidget = () => {
   }, []);
 
   return (
-    <div className="p-4">
-      {chartData ? <Doughnut data={chartData} /> : <p>Loading gauge data...</p>}
+    <div className="p-4 flex flex-col items-center justify-center">
+      <div
+        style={{
+          width: "200px",
+          height: "200px",
+        }}
+      >
+        {chartData ? (
+          <Doughnut data={chartData} />
+        ) : (
+          <p>Loading gauge data...</p>
+        )}
+      </div>
     </div>
   );
 };
@@ -611,14 +622,25 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
 
-              <Card className="rounded-lg border-r shadow-sm">
-                <CardHeader className="border-b bg-white px-6">
-                  <CardTitle>Transaction Volume Bar Chart</CardTitle>
-                </CardHeader>
-                <CardContent className="p-6 border-r">
-                  <TransactionVolumeBarChart />
-                </CardContent>
-              </Card>
+              <div className="grid gap-3 md:grid-row-2">
+                <Card className="rounded-lg border-r shadow-sm">
+                  <CardHeader className="border-b bg-white px-6">
+                    <CardTitle>Transaction Volume Bar Chart</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-6 border-r">
+                    <TransactionVolumeBarChart />
+                  </CardContent>
+                </Card>
+
+                <Card className="rounded-lg border-r shadow-sm">
+                  <CardHeader className="border-b bg-white px-6">
+                    <CardTitle>Risk Distribution</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-6 border-r">
+                    <RiskDistributionHistogram />
+                  </CardContent>
+                </Card>
+              </div>
 
               <Card className="rounded-lg border-r shadow-sm">
                 <CardHeader className="border-b bg-white px-6">
@@ -630,7 +652,7 @@ export default function Dashboard() {
               </Card>
             </div>
             {/* Bottom row */}
-            <div className="grid gap-6 md:grid-cols-3">
+            <div className="grid gap-3 md:grid-cols-3">
               <Card className="rounded-lg border-r shadow-sm md:col-span-2">
                 <CardHeader className="border-b bg-white px-6">
                   <CardTitle>Geospatial Heat Map</CardTitle>
@@ -645,18 +667,6 @@ export default function Dashboard() {
                 </CardHeader>
                 <CardContent className="p-6 border-r">
                   <LiveRiskTrendLineChart />
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* New Risk & Volume Charts */}
-            <div className="mt-6 grid gap-6 md:grid-cols-2">
-              <Card className="rounded-lg border-r shadow-sm">
-                <CardHeader className="border-b bg-white px-6">
-                  <CardTitle>Risk Distribution</CardTitle>
-                </CardHeader>
-                <CardContent className="p-6 border-r">
-                  <RiskDistributionHistogram />
                 </CardContent>
               </Card>
             </div>
