@@ -13,6 +13,7 @@ from custom_types import (
     ToolCallResultResponse,
     AgentInterruptResponse,
 )
+from db import update_trans, set_locked
 from prompts import (
     authorization_agent_prompt,
     fraud_agent_prompt,
@@ -22,7 +23,42 @@ import json
 
 class LlmClient:
     def __init__(self, mode: int, transaction_details: str, user_details: str):
+        """
+        Initialize LLM client
 
+        Args:
+            mode (int): Mode 0 = Authorization Agent, Mode 1 = Fraud Agent
+            transaction_details (str): Transaction details in format:
+                {
+                    merchant: string;
+                    category: string;
+                    trans_num: string;
+                    trans_date: string;
+                    trans_time: string;
+                    amt: number;
+                    merch_lat: number;
+                    merch_long: number;
+                    is_fraud: string;
+                    cc_num: string;
+                    user_id: string;
+                }
+            user_details (str): Customer details in format:
+                {
+                    first_name: string;
+                    last_name: string;
+                    cc: string;
+                    street: string;
+                    city: string;
+                    state: string;
+                    zip: number;
+                    lat: number;
+                    long: number;
+                    job: string;
+                    dob: string;
+                    gender: string;
+                    is_locked: boolean;
+                }
+        """
         self.client = AsyncOpenAI(
             api_key=os.environ["OPENAI_API_KEY"],
         )
@@ -165,7 +201,7 @@ class LlmClient:
         while True:
             func_calls = {}
             stream = await self.client.chat.completions.create(
-                model="gpt-4",  # Or use a 3.5 model for speed.
+                model="gpt-4o-mini",  # Or use a 3.5 model for speed.
                 messages=conversation,
                 stream=True,
                 tools=self.prepare_functions(),
@@ -245,6 +281,13 @@ class LlmClient:
                     response = args.get("response")
                     output = f"Authorization recorded as: {response}"
                     print("Output:", output)
+
+                    # Set is_fraud to "no" in the db
+                    await update_trans(
+                        self.transaction_details.get("trans_num"),
+                        {"is_fraud": "yes" if response == "no" else "no"},
+                    )
+
                     new_messages.append(
                         {
                             "role": "tool",
@@ -259,6 +302,13 @@ class LlmClient:
                 elif fc.function.name == "confirmFraud":
                     output = "Fraud confirmation recorded"
                     print("Output:", output)
+
+                    # Set is_fraud to "yes" in the db
+                    await update_trans(
+                        self.transaction_details.get("trans_num"),
+                        {"is_fraud": "yes"},
+                    )
+
                     new_messages.append(
                         {
                             "role": "tool",
