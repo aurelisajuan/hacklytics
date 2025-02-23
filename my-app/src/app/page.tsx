@@ -1,11 +1,11 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Bell, Home, Search, Settings, User2 } from "lucide-react"
-import Image from "next/image"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useState, useEffect } from "react";
+import { Bell, Home, Search, Settings, User2 } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,12 +13,37 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { createClient } from "@supabase/supabase-js";
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://default.supabase.co";
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_KEY || "defaultSupabaseKey";
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+type Transaction = {
+  merchant: string;
+  category: string;
+  trans_num: string;
+  trans_date: string;
+  trans_time: string;
+  amt: number;
+  merch_lat: number;
+  merch_long: number;
+  is_fraud: string;
+  cc_num: string;
+  user_id: string;
+};
 
 // Sidebar Component: Combines Banklytics branding and navigation
-function Sidebar({ activeLink, setActiveLink }: { activeLink: string; setActiveLink: React.Dispatch<React.SetStateAction<string>> }) {
+function Sidebar({
+  activeLink,
+  setActiveLink,
+}: {
+  activeLink: string;
+  setActiveLink: React.Dispatch<React.SetStateAction<string>>;
+}) {
   return (
     <aside className="h-full w-60 border-r border-gray-200 bg-white">
       {/* Banklytics Branding */}
@@ -63,7 +88,7 @@ function Sidebar({ activeLink, setActiveLink }: { activeLink: string; setActiveL
           <User2 className="h-5 w-5" />
           User Profiles
         </Link>
-        
+
         <Link
           href="#"
           onClick={() => setActiveLink("settings")}
@@ -78,11 +103,38 @@ function Sidebar({ activeLink, setActiveLink }: { activeLink: string; setActiveL
         </Link>
       </nav>
     </aside>
-  )
+  );
 }
 
 export default function Dashboard() {
-  const [activeLink, setActiveLink] = useState("dashboard")
+  const [activeLink, setActiveLink] = useState("dashboard");
+  const [updates, setUpdates] = useState<Transaction[]>([]);
+
+  useEffect(() => {
+    // Subscribe to realtime INSERT events on the "transaction" table
+    const channel = supabase
+      .channel("hacklytics")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "transaction" },
+        (payload) => {
+          console.log("Realtime update received:", payload);
+          const newUpdate = payload.new as Transaction;
+          setUpdates((prev) => {
+            // Prevent duplicate entries
+            if (prev.find((update) => update.trans_num === newUpdate.trans_num)) {
+              return prev;
+            }
+            return [...prev, newUpdate];
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   return (
     <div className="flex h-screen overflow-hidden">
@@ -103,11 +155,9 @@ export default function Dashboard() {
                 className="w-[300px] bg-white pl-8"
               />
             </div>
-
             <Button variant="ghost" size="icon" className="relative">
               <Bell className="h-5 w-5" />
             </Button>
-
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Avatar>
@@ -173,5 +223,5 @@ export default function Dashboard() {
         </main>
       </div>
     </div>
-  )
+  );
 }
