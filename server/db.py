@@ -87,16 +87,15 @@ async def insert_trans(
 
         print("Insert response:", insert_response)
 
-
         success_message = f"Transaction inserted successfully: {new_transaction}"
         print(success_message)
-        return {"success": success_message, "data": insert_response.data}
+        return insert_response.data
 
     except Exception as e:
         error_message = f"Exception in insert_trans: {e}"
         print(error_message)
         return {"error": error_message}
-    
+
 
 async def update_trans(trans_num: str, updated_fields: dict) -> dict:
     """
@@ -133,7 +132,7 @@ async def update_trans(trans_num: str, updated_fields: dict) -> dict:
         if not updated_rows:
             return {"error": f"No rows updated for transaction number: {trans_num}"}
 
-        return {"success": f"Updated {len(updated_rows)} row(s).", "data": updated_rows}
+        return updated_rows
 
     except Exception as e:
         return {"error": f"Exception while updating transaction {trans_num}: {e}"}
@@ -168,7 +167,7 @@ async def get_cust(cc_num: str):
             return {"error": "Customer not found", "cc_num": cc_num}
 
         print(f"Customer found: {customer}")
-        return {"success": True, "customer": customer}
+        return customer
 
     except Exception as e:
         print(f"Unexpected error while retrieving customer: {e}")
@@ -228,7 +227,6 @@ async def set_locked(cc: str, is_locked: str):
         return {"error": error_message}
 
 
-
 async def reset_db() -> dict:
     """
     Reset the database by clearing the 'transactions' table
@@ -253,9 +251,7 @@ async def reset_db() -> dict:
 
         # Load data from base.csv
         print("Loading data from base.csv...")
-        with open(
-            "./experiments/sample_data/base.csv", mode="r", newline=""
-        ) as csvfile:
+        with open("./sample_data/base.csv", mode="r", newline="") as csvfile:
             reader = csv.DictReader(csvfile)
             # Print CSV schema (the header field names)
             print("CSV schema (field names):", reader.fieldnames)
@@ -265,16 +261,22 @@ async def reset_db() -> dict:
             filtered_data = []
             for row in reader:
                 filtered_row = {
-                    'merchant': row['merchant'],
-                    'category': row['category'], 
-                    'trans_num': row['trans_num'],
-                    'trans_date': datetime.strptime(row['trans_date_trans_time'].split()[0], '%Y-%m-%d').date().isoformat(),
-                    'trans_time': datetime.strptime(row['trans_date_trans_time'], '%Y-%m-%d %H:%M:%S').isoformat(),
-                    'amt': float(row['amt']),
-                    'merch_lat': float(row['merch_lat']),
-                    'merch_long': float(row['merch_long']),
-                    'is_fraud': int(row['is_fraud']),
-                    'cc_num': row['cc_num']
+                    "merchant": row["merchant"],
+                    "category": row["category"],
+                    "trans_num": row["trans_num"],
+                    "trans_date": datetime.strptime(
+                        row["trans_date_trans_time"].split()[0], "%Y-%m-%d"
+                    )
+                    .date()
+                    .isoformat(),
+                    "trans_time": datetime.strptime(
+                        row["trans_date_trans_time"], "%Y-%m-%d %H:%M:%S"
+                    ).isoformat(),
+                    "amt": float(row["amt"]),
+                    "merch_lat": float(row["merch_lat"]),
+                    "merch_long": float(row["merch_long"]),
+                    "is_fraud": int(row["is_fraud"]),
+                    "cc_num": row["cc_num"],
                 }
                 filtered_data.append(filtered_row)
             base_data = filtered_data

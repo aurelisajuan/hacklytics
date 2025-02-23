@@ -180,7 +180,7 @@ class LlmClient:
                 },
                 end_call_function,
             ]
-        else:
+        elif self.mode == 1:
             return [
                 {
                     "type": "function",
@@ -196,6 +196,7 @@ class LlmClient:
         # Initialize conversation with the user prompt.
         conversation = self.prepare_prompt(request)
         response_id = request.response_id
+        print("Functions:", self.prepare_functions())
 
         # Loop until no new tool calls are generated.
         while True:

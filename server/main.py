@@ -53,20 +53,22 @@ async def get_transaction(request: Request):
             case _:
                 mode = "regular"  # Default to no fraud
 
+        print("Mode:", mode)
         details, risk_score = simulate_transaction(mode)
         if risk_score < 0.4:
             # No fraud detected
 
             # Here insert transaction into db with fraud false
             await insert_trans(
-                details.get("cc_num"),
+                int(details.get("cc_num")),
                 details.get("merchant"),
                 details.get("category"),
-                details.get("amt"),
-                details.get("merch_lat"),
-                details.get("merch_long"),
+                int(details.get("amt")),
+                int(details.get("merch_lat")),
+                int(details.get("merch_long")),
                 "false",
             )
+
             return JSONResponse(
                 status_code=200,
                 content={"success": "Transaction inserted successfully"},
@@ -74,23 +76,26 @@ async def get_transaction(request: Request):
 
         elif risk_score < 0.7:
             # Low Fraud
-
+            print("Low Fraud")
             # Here insert transaction into db with fraud pending
             data = await insert_trans(
-                details.get("cc_num"),
+                int(details.get("cc_num")),
                 details.get("merchant"),
                 details.get("category"),
-                details.get("amt"),
-                details.get("merch_lat"),
-                details.get("merch_long"),
+                int(details.get("amt")),
+                int(details.get("merch_lat")),
+                int(details.get("merch_long")),
                 "pending",
             )
+            print("Transaction inserted:", data)
 
-            customer = await get_cust(data.get("cc_num"))
-            transaction_details = data.get("data")
+            customer = await get_cust(int(data[0].get("cc_num")))
+            print("Customer:", customer)
+            transaction_details = data[0]
+            print("Transaction details:", transaction_details)
 
             # Set user locked status to false
-            await set_locked(data.get("cc_num"), "pending low")
+            await set_locked(data[0].get("cc_num"), "pending low")
 
             retell.call.create_phone_call(
                 from_number="+13192504307",
@@ -111,21 +116,21 @@ async def get_transaction(request: Request):
             # High Fraud
 
             # Here insert transaaction into db with fraud pending
-            await insert_trans(
-                details.get("cc_num"),
+            data = await insert_trans(
+                int(details.get("cc_num")),
                 details.get("merchant"),
                 details.get("category"),
-                details.get("amt"),
-                details.get("merch_lat"),
-                details.get("merch_long"),
+                int(details.get("amt")),
+                int(details.get("merch_lat")),
+                int(details.get("merch_long")),
                 "pending",
             )
 
-            customer = await get_cust(data.get("cc_num"))
-            transaction_details = data.get("data")
+            customer = await get_cust(int(data[0].get("cc_num")))
+            transaction_details = data[0]
 
             # Set user locked status to true
-            await set_locked(data.get("cc_num"), "pending high")
+            await set_locked(data[0].get("cc_num"), "pending high")
 
             retell.call.create_phone_call(
                 from_number="+13192504307",
@@ -170,28 +175,15 @@ async def websocket_handler(websocket: WebSocket, call_id: str):
         async def handle_message(request_json):
             nonlocal response_id
             nonlocal llm_client
-            print("Received message:", request_json)  # Debug: log received message
             if request_json["interaction_type"] == "call_details":
-                print("Call details received:", request_json)
                 mode = request_json["call"]["metadata"]["mode"]
                 transaction_details = request_json["call"]["metadata"][
                     "transaction_details"
                 ]
                 user_details = request_json["call"]["metadata"]["user_details"]
-                print(
-                    "mode:",
-                    mode,
-                    "transaction_details:",
-                    transaction_details,
-                    "user_details:",
-                    user_details,
-                )
                 llm_client = LlmClient(mode, transaction_details, user_details)
                 print("LLM client created")
                 async for event in llm_client.draft_begin_message():
-                    print(
-                        "Sending draft begin message:", event.__dict__
-                    )  # Debug: log draft message
                     await websocket.send_json(event.__dict__)
                 return
             if request_json["interaction_type"] == "ping_pong":
@@ -211,14 +203,6 @@ async def websocket_handler(websocket: WebSocket, call_id: str):
             ]:
                 response_id = request_json["response_id"]
                 transcript = request_json.get("transcript", [])
-                last_content = (
-                    transcript[-1].get("content")
-                    if transcript
-                    else "No transcript content"
-                )
-                print(
-                    f"Received interaction_type={request_json['interaction_type']}, response_id={response_id}, last_transcript={last_content}"
-                )
 
                 request_obj = ResponseRequiredRequest(
                     interaction_type=request_json["interaction_type"],
@@ -227,7 +211,6 @@ async def websocket_handler(websocket: WebSocket, call_id: str):
                 )
                 async for event in llm_client.draft_response(request_obj):
                     try:
-                        print("Sending response event:", event.__dict__)
                         await websocket.send_json(event.__dict__)
                     except Exception as e:
                         print(
@@ -238,7 +221,6 @@ async def websocket_handler(websocket: WebSocket, call_id: str):
                         break
 
         async for data in websocket.iter_json():
-            print("WebSocket received data:", data)
             asyncio.create_task(handle_message(data))
 
     except WebSocketDisconnect:
