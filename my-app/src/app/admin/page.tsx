@@ -29,11 +29,7 @@ import {
   LineElement,
   PointElement,
 } from "chart.js";
-import {
-  GoogleMap,
-  useJsApiLoader,
-  HeatmapLayer,
-} from "@react-google-maps/api";
+import { GoogleMap, useJsApiLoader, HeatmapLayer } from "@react-google-maps/api";
 
 ChartJS.register(
   ArcElement,
@@ -57,7 +53,7 @@ type Transaction = {
   trans_date: string;
   trans_time: string;
   amt: number;
-  risk_fact: number; // ensure this exists in your database
+  risk_fact: number;
   merch_lat: number;
   merch_long: number;
   is_fraud: string;
@@ -65,25 +61,22 @@ type Transaction = {
   user_id: string;
 };
 
-// Transaction Breakdown Pie Chart Component (existing)
+// Transaction Breakdown Pie Chart Component
 const TransactionBreakdownChart = () => {
-  const [segmentation, setSegmentation] = useState("category");
+  const [segmentation] = useState("category");
   const [chartData, setChartData] = useState<any>(null);
 
   useEffect(() => {
     async function fetchTransactions() {
-      const selectColumns =
-        segmentation === "category"
-          ? "category, amt"
-          : segmentation === "state"
-          ? "state, amt"
-          : segmentation === "city"
-          ? "city, amt"
-          : "category, amt";
+      const selectColumns = segmentation === "category"
+        ? "category, amt"
+        : segmentation === "state"
+        ? "state, amt"
+        : segmentation === "city"
+        ? "city, amt"
+        : "category, amt";
 
-      const { data, error } = await supabase
-        .from("transaction")
-        .select(selectColumns);
+      const { data, error } = await supabase.from("transaction").select(selectColumns);
 
       if (error) {
         console.log(error);
@@ -91,12 +84,10 @@ const TransactionBreakdownChart = () => {
       }
 
       const totals: { [key: string]: number } = {};
-      if (data) {
-        data.forEach((tx: any) => {
-          const key = tx[segmentation] || "Unknown";
-          totals[key] = (totals[key] || 0) + tx.amt;
-        });
-      }
+      data?.forEach((tx: any) => {
+        const key = tx[segmentation] || "Unknown";
+        totals[key] = (totals[key] || 0) + tx.amt;
+      });
 
       const labels = Object.keys(totals);
       const amounts = Object.values(totals);
@@ -105,22 +96,8 @@ const TransactionBreakdownChart = () => {
         datasets: [
           {
             data: amounts,
-            backgroundColor: [
-              "#FF6384",
-              "#36A2EB",
-              "#FFCE56",
-              "#4BC0C0",
-              "#9966FF",
-              "#FF9F40",
-            ],
-            hoverBackgroundColor: [
-              "#FF6384",
-              "#36A2EB",
-              "#FFCE56",
-              "#4BC0C0",
-              "#9966FF",
-              "#FF9F40",
-            ],
+            backgroundColor: ["#FF6384", "#36A2EB", "#FFCE56", "#4BC0C0", "#9966FF", "#FF9F40"],
+            hoverBackgroundColor: ["#FF6384", "#36A2EB", "#FFCE56", "#4BC0C0", "#9966FF", "#FF9F40"],
           },
         ],
       });
@@ -129,45 +106,28 @@ const TransactionBreakdownChart = () => {
   }, [segmentation]);
 
   return (
-    <div className="p-2">
-      {/* <h2 className="text-xl font-semibold mb-4">
-        Transaction Breakdown Pie Chart
-      </h2> */}
-      <div className="mb-4">
-        <label htmlFor="segmentation" className="mr-2">
-          Segment by:
-        </label>
-        <select
-          id="segmentation"
-          value={segmentation}
-          onChange={(e) => setSegmentation(e.target.value)}
-          className="border p-1 rounded"
-        >
-          <option value="category">Merchant Category</option>
-          <option value="state">State</option>
-          <option value="city">City</option>
-        </select>
-      </div>
-      <div style={{ width: "350px", height: "350px" }}>
-        {chartData ? (
-          <Pie
-            data={chartData}
-            options={{
-              maintainAspectRatio: false,
-            }}
-          />
-        ) : (
-          <p>Loading chart data...</p>
-        )}
-      </div>
+    <div className="w-full h-full flex items-center justify-center">
+      {chartData ? (
+        <Pie
+          data={chartData}
+          options={{
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { position: "bottom", labels: { font: { size: 10 } } },
+            },
+          }}
+        />
+      ) : (
+        <p>Loading chart data...</p>
+      )}
     </div>
   );
 };
 
-//Geospatial Heat Map
+// Geospatial Heat Map Component
 const containerStyle = {
   width: "100%",
-  height: "500px",
+  height: "100%",
 };
 
 const center = {
@@ -192,7 +152,6 @@ const GoogleHeatMap = () => {
     setMap(null);
   }, []);
 
-  // Sample heatmap data
   const heatmapData = [
     { lat: 51.505, lng: -0.09, weight: 1 },
     { lat: 51.51, lng: -0.1, weight: 0.5 },
@@ -201,16 +160,11 @@ const GoogleHeatMap = () => {
     { lat: 51.53, lng: -0.1, weight: 0.3 },
   ];
 
-  if (loadError) {
-    return <div>Error loading maps</div>;
-  }
-
-  if (!isLoaded) {
-    return <div>Loading maps</div>;
-  }
+  if (loadError) return <div>Error loading maps</div>;
+  if (!isLoaded) return <div>Loading maps</div>;
 
   return (
-    <div className="w-full h-[500px]">
+    <div className="w-full h-full">
       <GoogleMap
         mapContainerStyle={containerStyle}
         center={center}
@@ -219,13 +173,8 @@ const GoogleHeatMap = () => {
         onUnmount={onUnmount}
       >
         <HeatmapLayer
-          data={heatmapData.map(
-            (point) => new google.maps.LatLng(point.lat, point.lng)
-          )}
-          options={{
-            radius: 20,
-            opacity: 0.6,
-          }}
+          data={heatmapData.map((point) => new google.maps.LatLng(point.lat, point.lng))}
+          options={{ radius: 20, opacity: 0.6 }}
         />
       </GoogleMap>
     </div>
@@ -238,44 +187,24 @@ const LiveRiskTrendLineChart = () => {
 
   useEffect(() => {
     async function fetchRiskTrend() {
-      const { data, error } = await supabase
-        .from("transaction")
-        .select("trans_date, trans_time, risk_fact");
+      const { data, error } = await supabase.from("transaction").select("trans_date, trans_time, risk_fact");
+      if (error) return console.log(error);
 
-      if (error) {
-        console.log(error);
-        return;
-      }
-
-      // Group transactions by timestamp (combine date and time) and compute average risk_fact.
       const trend: { [key: string]: { total: number; count: number } } = {};
-
       data.forEach((tx: any) => {
         const timestamp = `${tx.trans_date} ${tx.trans_time}`;
-        if (!trend[timestamp]) {
-          trend[timestamp] = { total: 0, count: 0 };
-        }
+        if (!trend[timestamp]) trend[timestamp] = { total: 0, count: 0 };
         trend[timestamp].total += tx.risk_fact;
         trend[timestamp].count += 1;
       });
 
-      // Sort timestamps in chronological order.
-      const labels = Object.keys(trend).sort(
-        (a, b) => new Date(a).getTime() - new Date(b).getTime()
-      );
-      const averages = labels.map(
-        (label) => trend[label].total / trend[label].count
-      );
+      const labels = Object.keys(trend).sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+      const averages = labels.map(label => trend[label].total / trend[label].count);
 
       setChartData({
         labels,
         datasets: [
-          {
-            label: "Average Risk Score",
-            data: averages,
-            borderColor: "#36A2EB",
-            fill: false,
-          },
+          { label: "Average Risk Score", data: averages, borderColor: "#36A2EB", fill: false },
         ],
       });
     }
@@ -283,7 +212,7 @@ const LiveRiskTrendLineChart = () => {
   }, []);
 
   return (
-    <div className="p-4" style={{ width: "350px", height: "250px" }}>
+    <div className="w-full h-full p-2">
       {chartData ? (
         <Line data={chartData} options={{ maintainAspectRatio: false }} />
       ) : (
@@ -296,65 +225,38 @@ const LiveRiskTrendLineChart = () => {
 // Transaction Volume Bar Chart Component
 const TransactionVolumeBarChart = () => {
   const [chartData, setChartData] = useState<any>(null);
-  const riskThreshold = 0.5; // adjust threshold as needed
+  const riskThreshold = 0.5;
 
   useEffect(() => {
     async function fetchVolume() {
-      const { data, error } = await supabase
-        .from("transaction")
-        .select("category, risk_fact");
+      const { data, error } = await supabase.from("transaction").select("category, risk_fact");
+      if (error) return console.log(error);
 
-      if (error) {
-        // console.error("Error fetching transaction volume:", error);
-        console.log(error);
-        return;
-      }
-
-      // Group by category, count transactions and compute average risk_fact per category.
-      const volume: {
-        [key: string]: { count: number; riskTotal: number };
-      } = {};
-
+      const volume: { [key: string]: { count: number; riskTotal: number } } = {};
       data.forEach((tx: any) => {
         const cat = tx.category || "Unknown";
-        if (!volume[cat]) {
-          volume[cat] = { count: 0, riskTotal: 0 };
-        }
+        if (!volume[cat]) volume[cat] = { count: 0, riskTotal: 0 };
         volume[cat].count += 1;
         volume[cat].riskTotal += tx.risk_fact;
       });
 
       const labels = Object.keys(volume);
-      const counts = labels.map((label) => volume[label].count);
-      const avgRisks = labels.map(
-        (label) => volume[label].riskTotal / volume[label].count
-      );
+      const counts = labels.map(label => volume[label].count);
+      const avgRisks = labels.map(label => volume[label].riskTotal / volume[label].count);
+      // const backgroundColors = avgRisks.map(avg => avg >= riskThreshold ? "#FF6384" : "#36A2EB");
 
-      // Color-code each bar based on the average risk score
-      const backgroundColors = avgRisks.map((avg: number) =>
-        avg >= riskThreshold ? "#FF6384" : "#36A2EB"
-      );
-
+      const backgroundColor = avgRisks.map(avg => avg >= riskThreshold ? "#FF6384" : "#36A2EB");
       setChartData({
         labels,
-        datasets: [
-          {
-            label: "Transaction Volume",
-            data: counts,
-            backgroundColor: backgroundColors,
-          },
-        ],
+        datasets: [{ label: "Transaction Volume", data: counts, backgroundColor }],
       });
     }
     fetchVolume();
   }, []);
 
   return (
-    <div className="p-4">
-      {/* <h2 className="text-xl font-semibold mb-4">
-        Transaction Volume Bar Chart
-      </h2> */}
-      {chartData ? <Bar data={chartData} /> : <p>Loading volume data...</p>}
+    <div className="w-full h-full flex items-center justify-center p-2">
+      {chartData ? <Bar data={chartData} options={{ maintainAspectRatio: false }} /> : <p>Loading volume data...</p>}
     </div>
   );
 };
@@ -362,22 +264,13 @@ const TransactionVolumeBarChart = () => {
 // Risk Distribution Histogram Component
 const RiskDistributionHistogram = () => {
   const [chartData, setChartData] = useState<any>(null);
-  // Define bins—for example, five bins between 0 and 1.
   const bins = [0, 0.2, 0.4, 0.6, 0.8, 1.0];
 
   useEffect(() => {
     async function fetchRiskDistribution() {
-      const { data, error } = await supabase
-        .from("transaction")
-        .select("risk_fact");
+      const { data, error } = await supabase.from("transaction").select("risk_fact");
+      if (error) return console.log(error);
 
-      if (error) {
-        // console.error("Error fetching risk distribution:", error);
-        console.log(error);
-        return;
-      }
-
-      // Count the number of risk_fact values in each bin.
       const distribution = Array(bins.length - 1).fill(0);
       data.forEach((tx: any) => {
         const score = tx.risk_fact;
@@ -389,27 +282,18 @@ const RiskDistributionHistogram = () => {
         }
       });
 
-      const labels = bins
-        .slice(0, -1)
-        .map((b, i) => `${b.toFixed(1)} - ${bins[i + 1].toFixed(1)}`);
-
+      const labels = bins.slice(0, -1).map((b, i) => `${b.toFixed(1)} - ${bins[i + 1].toFixed(1)}`);
       setChartData({
         labels,
-        datasets: [
-          {
-            label: "Risk Distribution",
-            data: distribution,
-            backgroundColor: "#FFCE56",
-          },
-        ],
+        datasets: [{ label: "Risk Distribution", data: distribution, backgroundColor: "#FFCE56" }],
       });
     }
     fetchRiskDistribution();
   }, []);
 
   return (
-    <div className="p-4">
-      {chartData ? <Bar data={chartData} /> : <p>Loading histogram data...</p>}
+    <div className="w-full h-full flex items-center justify-center p-2">
+      {chartData ? <Bar data={chartData} options={{ maintainAspectRatio: false }} /> : <p>Loading histogram data...</p>}
     </div>
   );
 };
@@ -417,114 +301,54 @@ const RiskDistributionHistogram = () => {
 // Risk Gauge Widget Component
 const RiskGaugeWidget = () => {
   const [chartData, setChartData] = useState<any>(null);
-  const riskThreshold = 0.5; // adjust threshold as needed
+  const riskThreshold = 0.5;
 
   useEffect(() => {
     async function fetchRiskGauge() {
-      const { data, error } = await supabase
-        .from("transaction")
-        .select("risk_fact");
+      const { data, error } = await supabase.from("transaction").select("risk_fact");
+      if (error) return console.log(error);
 
-      if (error) {
-        // console.error("Error fetching gauge data:", error);
-        console.log(error);
-        return;
-      }
-
-      // Compute total transactions and count high-risk transactions.
       const total = data.length;
-      const highRiskCount = data.filter(
-        (tx: any) => tx.risk_fact >= riskThreshold
-      ).length;
+      const highRiskCount = data.filter((tx: any) => tx.risk_fact >= riskThreshold).length;
       const highRiskPercentage = total ? (highRiskCount / total) * 100 : 0;
 
       setChartData({
         labels: ["High Risk", "Low Risk"],
-        datasets: [
-          {
-            data: [highRiskPercentage, 100 - highRiskPercentage],
-            backgroundColor: ["#FF6384", "#36A2EB"],
-          },
-        ],
+        datasets: [{ data: [highRiskPercentage, 100 - highRiskPercentage], backgroundColor: ["#FF6384", "#36A2EB"] }],
       });
     }
     fetchRiskGauge();
   }, []);
 
   return (
-    <div className="p-4 flex flex-col items-center justify-center">
-      <div
-        style={{
-          width: "200px",
-          height: "200px",
-        }}
-      >
-        {chartData ? (
-          <Doughnut data={chartData} />
-        ) : (
-          <p>Loading gauge data...</p>
-        )}
+    <div className="w-full h-full flex flex-col items-center justify-center p-2">
+      <div className="w-40 h-40">
+        {chartData ? <Doughnut data={chartData} options={{ maintainAspectRatio: false }} /> : <p>Loading gauge data...</p>}
       </div>
     </div>
   );
 };
 
 // Sidebar Component
-function Sidebar({
-  activeLink,
-  setActiveLink,
-}: {
-  activeLink: string;
-  setActiveLink: React.Dispatch<React.SetStateAction<string>>;
-}) {
+function Sidebar({ activeLink, setActiveLink }: { activeLink: string; setActiveLink: React.Dispatch<React.SetStateAction<string>>; }) {
   return (
     <aside className="h-full w-60 border-r border-gray-200 bg-white">
       <div className="px-6 py-4">
         <div className="flex items-center gap-3">
-          <Image
-            src="/logo.png"
-            alt="Banklytics Logo"
-            width={40}
-            height={40}
-            className="object-contain"
-          />
+          <Image src="/logo.png" alt="Banklytics Logo" width={40} height={40} className="object-contain" />
           <span className="text-2xl font-semibold">Banklytics</span>
         </div>
       </div>
       <nav className="flex h-full flex-col p-4">
-        <Link
-          href="/admin"
-          onClick={() => setActiveLink("dashboard")}
-          className={`mb-1 flex items-center gap-2 rounded-lg px-4 py-2 ${
-            activeLink === "dashboard"
-              ? "bg-[#E5F3FF] text-sky-600"
-              : "text-gray-500 hover:bg-[#E5F3FF] hover:text-sky-600"
-          }`}
-        >
+        <Link href="/admin" onClick={() => setActiveLink("dashboard")} className={`mb-1 flex items-center gap-2 rounded-lg px-4 py-2 ${activeLink === "dashboard" ? "bg-[#E5F3FF] text-sky-600" : "text-gray-500 hover:bg-[#E5F3FF] hover:text-sky-600"}`}>
           <Home className="w-5 h-5" />
           Dashboard
         </Link>
-        <Link
-          href="/user"
-          onClick={() => setActiveLink("user-profiles")}
-          className={`mb-1 flex items-center gap-2 rounded-lg px-4 py-2 ${
-            activeLink === "user-profiles"
-              ? "bg-[#E5F3FF] text-sky-600"
-              : "text-gray-500 hover:bg-[#E5F3FF] hover:text-sky-600"
-          }`}
-        >
+        <Link href="/user" onClick={() => setActiveLink("user-profiles")} className={`mb-1 flex items-center gap-2 rounded-lg px-4 py-2 ${activeLink === "user-profiles" ? "bg-[#E5F3FF] text-sky-600" : "text-gray-500 hover:bg-[#E5F3FF] hover:text-sky-600"}`}>
           <User2 className="w-5 h-5" />
           User Profiles
         </Link>
-        <Link
-          href="#"
-          onClick={() => setActiveLink("settings")}
-          className={`flex items-center gap-2 rounded-lg px-4 py-2 ${
-            activeLink === "settings"
-              ? "bg-[#E5F3FF] text-sky-600"
-              : "text-gray-500 hover:bg-[#E5F3FF] hover:text-sky-600"
-          }`}
-        >
+        <Link href="#" onClick={() => setActiveLink("settings")} className={`flex items-center gap-2 rounded-lg px-4 py-2 ${activeLink === "settings" ? "bg-[#E5F3FF] text-sky-600" : "text-gray-500 hover:bg-[#E5F3FF] hover:text-sky-600"}`}>
           <Settings className="w-5 h-5" />
           Settings
         </Link>
@@ -540,26 +364,15 @@ export default function Dashboard() {
   useEffect(() => {
     const channel = supabase
       .channel("hacklytics")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "transaction",
-        },
-        (payload) => {
-          console.log("Realtime update received:", payload);
-          const newUpdate = payload.new as Transaction;
-          setUpdates((prev) => {
-            if (
-              prev.find((update) => update.trans_num === newUpdate.trans_num)
-            ) {
-              return prev;
-            }
-            return [...prev, newUpdate];
-          });
-        }
-      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "transaction" }, (payload) => {
+        console.log("Realtime update received:", payload);
+        const newUpdate = payload.new as Transaction;
+        setUpdates((prev) =>
+          prev.find((update) => update.trans_num === newUpdate.trans_num)
+            ? prev
+            : [...prev, newUpdate]
+        );
+      })
       .subscribe();
 
     return () => {
@@ -576,11 +389,7 @@ export default function Dashboard() {
           <div className="flex items-center gap-4 ml-auto">
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Search here ..."
-                className="w-[300px] bg-white pl-8"
-              />
+              <Input type="search" placeholder="Search here ..." className="w-[300px] bg-white pl-8" />
             </div>
             <Button variant="ghost" size="icon" className="relative">
               <Bell className="w-5 h-5" />
@@ -603,67 +412,59 @@ export default function Dashboard() {
             </DropdownMenu>
           </div>
         </header>
-        <main className="flex-1 p-3 overflow-auto">
-          <div className="grid gap-3">
-            {/* Middle row */}
-            <div className="grid gap-3 md:grid-cols-3">
-              <Card className="rounded-lg border-r shadow-sm">
-                <CardHeader className="border-b bg-white px-6">
-                  <CardTitle>Transaction Breakdown Pie Chart</CardTitle>
-                </CardHeader>
-                <CardContent className="p-6 border-r">
-                  <TransactionBreakdownChart />
-                </CardContent>
-              </Card>
-
-              <div className="grid gap-3 md:grid-row-2">
-                <Card className="rounded-lg border-r shadow-sm">
-                  <CardHeader className="border-b bg-white px-6">
-                    <CardTitle>Transaction Volume Bar Chart</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-6 border-r">
-                    <TransactionVolumeBarChart />
-                  </CardContent>
-                </Card>
-
-                <Card className="rounded-lg border-r shadow-sm">
-                  <CardHeader className="border-b bg-white px-6">
-                    <CardTitle>Risk Distribution</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-6 border-r">
-                    <RiskDistributionHistogram />
-                  </CardContent>
-                </Card>
-              </div>
-
-              <Card className="rounded-lg border-r shadow-sm">
-                <CardHeader className="border-b bg-white px-6">
-                  <CardTitle>Gauge/ Dial Widgets</CardTitle>
-                </CardHeader>
-                <CardContent className="p-6 border-r">
-                  <RiskGaugeWidget />
-                </CardContent>
-              </Card>
-            </div>
-            {/* Bottom row */}
-            <div className="grid gap-3 md:grid-cols-2">
-              <Card className="rounded-lg border-r shadow-sm">
-                <CardHeader className="border-b bg-white px-6">
-                  <CardTitle>Geospatial Heat Map</CardTitle>
-                </CardHeader>
-                <CardContent className="p-6 border-r">
+        <main className="p-3 flex-1 overflow-hidden">
+          {/* 2x3 grid with fixed heights per card */}
+          <div className="grid grid-cols-3 grid-rows-2 gap-2 h-[calc(100vh-4rem)] overflow-hidden">
+            <Card className="rounded-lg shadow-sm">
+              <CardHeader className="border-b p-3 bg-white px-6">
+                <CardTitle>Transaction Breakdown</CardTitle>
+              </CardHeader>
+              <CardContent className="p-2 h-full overflow-hidden">
+                <TransactionBreakdownChart />
+              </CardContent>
+            </Card>
+            <Card className="rounded-lg shadow-sm">
+              <CardHeader className="border-b p-3 bg-white px-6">
+                <CardTitle>Transaction Volume</CardTitle>
+              </CardHeader>
+              <CardContent className="p-2 h-full overflow-hidden">
+                <TransactionVolumeBarChart />
+              </CardContent>
+            </Card>
+            <Card className="rounded-lg shadow-sm">
+              <CardHeader className="border-b p-3 bg-white px-6">
+                <CardTitle>Risk Distribution</CardTitle>
+              </CardHeader>
+              <CardContent className="p-2 h-full overflow-hidden">
+                <RiskDistributionHistogram />
+              </CardContent>
+            </Card>
+            <Card className="rounded-lg shadow-sm">
+              <CardHeader className="border-b p-3 bg-white px-6">
+                <CardTitle>Risk Gauge</CardTitle>
+              </CardHeader>
+              <CardContent className="p-2 h-full overflow-hidden">
+                <RiskGaugeWidget />
+              </CardContent>
+            </Card>
+            <Card className="rounded-lg shadow-sm">
+              <CardHeader className="border-b p-3 bg-white px-6">
+                <CardTitle>Geospatial Heat Map</CardTitle>
+              </CardHeader>
+              <CardContent className="p-2 h-full overflow-hidden">
+                <div className="w-full h-full">
                   <GoogleHeatMap />
-                </CardContent>
-              </Card>
-              <Card className="rounded-lg border-r shadow-sm">
-                <CardHeader className="border-b bg-white px-6">
-                  <CardTitle>Live Risk Trend Line Chart</CardTitle>
-                </CardHeader>
-                <CardContent className="p-6 border-r">
-                  <LiveRiskTrendLineChart />
-                </CardContent>
-              </Card>
-            </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="rounded-lg shadow-sm">
+              <CardHeader className="border-b p-3 bg-white px-6">
+                <CardTitle>Live Risk Trend</CardTitle>
+              </CardHeader>
+              <CardContent className="p-2 h-full overflow-hidden">
+                <LiveRiskTrendLineChart />
+              </CardContent>
+            </Card>
           </div>
         </main>
       </div>
