@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 
-export default function FraudAlert({ mode }: { mode: 0 | 1 | 2 }) {
+export default function wFraudAlert({ mode }: { mode: 0 | 1 | 2 }) {
   // Mode is a number that is either 0, 1 or 2
   // 0: Account temporarily locked, you should receive a phone call in a couple minutes verifying your identity
   // 1: Account more seriously locked, you need to upload a selfie to verify your identity

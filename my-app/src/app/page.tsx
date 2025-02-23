@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import FraudAlert from "@/components/alert";
+import TransactionApproved from "@/components/approved";
 import Profile from "@/components/profile";
 import { createClient } from "@supabase/supabase-js";
 
@@ -10,6 +11,7 @@ interface Customer {
   first_name: string;
   last_name: string;
   cc: string;
+  is_locked: "no" | "yes" | "pending low" | "pending high";
   // other fields omitted for brevity
 }
 
@@ -33,10 +35,18 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+type LockStatus = "yes" | "pending low" | "pending high";
+type PageMode = 0 | 1 | 2;
+
+const page_map: Record<LockStatus, PageMode> = {
+  "yes": 2,
+  "pending low": 0,
+  "pending high": 1
+};
+
 const Home = () => {
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [mode, setMode] = useState<0 | 1 | 2>(2 as 0 | 1 | 2);
 
   // Fetch Lisa Lin's customer record
   useEffect(() => {
@@ -73,8 +83,18 @@ const Home = () => {
     }
     fetchTransactions();
   }, [customer]);
+  console.log(customer)
 
-  return <Profile customer={customer} transactions={transactions} />;
+
+  if (!customer) return null;
+
+  if (customer.is_locked === 'no') {
+    return <Profile customer={customer} transactions={transactions} />;
+  } else {
+    return <FraudAlert mode={page_map[customer.is_locked]} />;
+  }
+
+
 };
 
 export default Home;
