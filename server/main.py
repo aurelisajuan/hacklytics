@@ -12,8 +12,9 @@ from custom_types import (
 )
 from llm import LlmClient
 from supabase import create_client, Client
+from model import simulate_transaction
 
-from db import insert_trans, set_locked, get_cust
+from db import reset_db, insert_trans, update_trans, get_cust, set_locked
 
 load_dotenv(override=True)
 app = FastAPI()
@@ -41,20 +42,29 @@ async def get_transaction(request: Request):
         data = await request.json()
         mode = data.get("mode")
 
-        # Use ml model to detect fraud
-        mode = 0
+        # Determine fraud level based on mode
+        match mode:
+            case "0":
+                mode = "regular"  # No fraud
+            case "1":
+                mode = "low_fraud"  # Low risk fraud
+            case "2":
+                mode = "high_fraud"  # High risk fraud
+            case _:
+                mode = "regular"  # Default to no fraud
 
-        if mode < 0.4:
+        details, risk_score = simulate_transaction(mode)
+        if risk_score < 0.4:
             # No fraud detected
 
             # Here insert transaction into db with fraud false
             await insert_trans(
-                data.get("cc_num"),
-                data.get("merchant"),
-                data.get("category"),
-                data.get("amt"),
-                data.get("merch_lat"),
-                data.get("merch_long"),
+                details.get("cc_num"),
+                details.get("merchant"),
+                details.get("category"),
+                details.get("amt"),
+                details.get("merch_lat"),
+                details.get("merch_long"),
                 "false",
             )
             return JSONResponse(
@@ -62,17 +72,17 @@ async def get_transaction(request: Request):
                 content={"success": "Transaction inserted successfully"},
             )
 
-        elif mode < 0.7:
+        elif risk_score < 0.7:
             # Low Fraud
 
             # Here insert transaction into db with fraud pending
             data = await insert_trans(
-                data.get("cc_num"),
-                data.get("merchant"),
-                data.get("category"),
-                data.get("amt"),
-                data.get("merch_lat"),
-                data.get("merch_long"),
+                details.get("cc_num"),
+                details.get("merchant"),
+                details.get("category"),
+                details.get("amt"),
+                details.get("merch_lat"),
+                details.get("merch_long"),
                 "pending",
             )
 
@@ -102,12 +112,12 @@ async def get_transaction(request: Request):
 
             # Here insert transaaction into db with fraud pending
             await insert_trans(
-                data.get("cc_num"),
-                data.get("merchant"),
-                data.get("category"),
-                data.get("amt"),
-                data.get("merch_lat"),
-                data.get("merch_long"),
+                details.get("cc_num"),
+                details.get("merchant"),
+                details.get("category"),
+                details.get("amt"),
+                details.get("merch_lat"),
+                details.get("merch_long"),
                 "pending",
             )
 
@@ -240,3 +250,11 @@ async def websocket_handler(websocket: WebSocket, call_id: str):
         await websocket.close(1011, "Server error")
     finally:
         print(f"LLM WebSocket connection closed for {call_id}")
+
+
+@app.delete("/reset")
+async def reset():
+    await reset_db()
+    return JSONResponse(
+        status_code=200, content={"success": "Database reset successfully"}
+    )

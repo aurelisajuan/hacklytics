@@ -86,10 +86,12 @@ const TransactionBreakdownChart = () => {
       }
 
       const totals: { [key: string]: number } = {};
-      data?.forEach((tx: any) => {
-        const key = tx[segmentation] || "Unknown";
-        totals[key] = (totals[key] || 0) + tx.amt;
-      });
+      if (data) {
+        data.forEach((tx: any) => {
+          const key = tx[segmentation] || "Unknown";
+          totals[key] = (totals[key] || 0) + tx.amt;
+        });
+      }
 
       const labels = Object.keys(totals);
       const amounts = Object.values(totals);
@@ -421,7 +423,7 @@ function Sidebar({
               : "text-gray-500 hover:bg-[#E5F3FF] hover:text-sky-600"
           }`}
         >
-          <Home className="h-5 w-5" />
+          <Home className="w-5 h-5" />
           Dashboard
         </Link>
         <Link
@@ -433,7 +435,7 @@ function Sidebar({
               : "text-gray-500 hover:bg-[#E5F3FF] hover:text-sky-600"
           }`}
         >
-          <User2 className="h-5 w-5" />
+          <User2 className="w-5 h-5" />
           User Profiles
         </Link>
         <Link
@@ -445,7 +447,7 @@ function Sidebar({
               : "text-gray-500 hover:bg-[#E5F3FF] hover:text-sky-600"
           }`}
         >
-          <Settings className="h-5 w-5" />
+          <Settings className="w-5 h-5" />
           Settings
         </Link>
       </nav>
@@ -493,7 +495,7 @@ export default function Dashboard() {
       <div className="flex flex-1 flex-col bg-gray-50">
         <header className="flex h-16 items-center border-b border-gray-200 bg-white px-6">
           <h1 className="text-2xl font-semibold">Dashboard</h1>
-          <div className="ml-auto flex items-center gap-4">
+          <div className="flex items-center gap-4 ml-auto">
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
@@ -503,7 +505,7 @@ export default function Dashboard() {
               />
             </div>
             <Button variant="ghost" size="icon" className="relative">
-              <Bell className="h-5 w-5" />
+              <Bell className="w-5 h-5" />
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
