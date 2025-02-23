@@ -289,11 +289,10 @@ class LlmClient:
                         {"is_fraud": "yes" if response == "no" else "no"},
                     )
 
-                    if response == "no":
-                        await set_locked(
-                            self.transaction_details.get("cc_num"),
-                            "yes",
-                        )
+                    await set_locked(
+                        self.transaction_details.get("cc_num"),
+                        "yes" if response == "no" else "no",
+                    )
 
                     new_messages.append(
                         {

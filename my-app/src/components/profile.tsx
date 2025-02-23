@@ -107,11 +107,13 @@ export default function Profile({ customer, transactions }: ProfileProps) {
               <Card className="bg-zinc-900 text-white">
                 <CardContent className="p-6">
                   <div className="flex justify-between items-start mb-6">
-                    <p className="text-2xl font-semibold">$3009.94</p>
+                    <p className="text-2xl font-semibold">
+                      ${transactions.reduce((total, transaction) => total + transaction.amt, 0).toFixed(2)}
+                    </p>
                     <img src="/visa.webp" alt="Visa" className="h-8" />
                   </div>
                   <div className="space-y-1">
-                    <p className="text-gray-400">Bank of Hacklytixs</p>
+                    <p className="text-gray-400">Bank of Hacklytics</p>
                     <p className="font-mono">4512 •••• •••• 1773</p>
                   </div>
                 </CardContent>
@@ -128,9 +130,9 @@ export default function Profile({ customer, transactions }: ProfileProps) {
               </div>
               <div className="space-y-4">
                 {transactions.length > 0 ? (
-                  transactions.map((transaction) => (
+                  transactions.map((transaction, index) => (
                     <div
-                      key={transaction.trans_num}
+                      key={index}
                       className="flex items-center justify-between"
                     >
                       <div className="flex items-center gap-3">
