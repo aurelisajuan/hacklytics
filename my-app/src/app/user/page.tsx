@@ -27,6 +27,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { createClient } from "@supabase/supabase-js";
+import AudioRecorder from "@/components/audio";
 
 // Define the Customer interface
 interface Customer {
@@ -74,7 +75,7 @@ function Sidebar({
   setActiveLink: React.Dispatch<React.SetStateAction<string>>;
 }) {
   return (
-    <aside className="h-full w-60 border-r border-gray-200 bg-white">
+    <aside className="h-full bg-white border-r border-gray-200 w-60">
       {/* Banklytics Branding */}
       <div className="px-6 py-4">
         <div className="flex items-center gap-3">
@@ -90,7 +91,7 @@ function Sidebar({
         </div>
       </div>
       {/* Navigation Links */}
-      <nav className="flex h-full flex-col p-4">
+      <nav className="flex flex-col h-full p-4">
         <Link
           href="/admin"
           onClick={() => setActiveLink("dashboard")}
@@ -100,7 +101,7 @@ function Sidebar({
               : "text-gray-500 hover:bg-[#E5F3FF] hover:text-sky-600"
           }`}
         >
-          <HomeIcon className="h-5 w-5" />
+          <HomeIcon className="w-5 h-5" />
           Dashboard
         </Link>
         <Link
@@ -112,7 +113,7 @@ function Sidebar({
               : "text-gray-500 hover:bg-[#E5F3FF] hover:text-sky-600"
           }`}
         >
-          <UserCircle className="h-5 w-5" />
+          <UserCircle className="w-5 h-5" />
           User Profiles
         </Link>
         <Link
@@ -124,7 +125,7 @@ function Sidebar({
               : "text-gray-500 hover:bg-[#E5F3FF] hover:text-sky-600"
           }`}
         >
-          <Settings className="h-5 w-5" />
+          <Settings className="w-5 h-5" />
           Settings
         </Link>
       </nav>
@@ -179,10 +180,10 @@ export default function DashboardPage() {
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       <Sidebar activeLink={activeLink} setActiveLink={setActiveLink} />
-      <div className="flex flex-1 flex-col">
-        <header className="flex h-16 items-center border-b border-gray-200 bg-white px-6">
+      <div className="flex flex-col flex-1">
+        <header className="flex items-center h-16 px-6 bg-white border-b border-gray-200">
           <h1 className="text-2xl font-semibold">User Profile</h1>
-          <div className="ml-auto flex items-center gap-4">
+          <div className="flex items-center gap-4 ml-auto">
             <div className="relative">
               <SearchIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
@@ -192,7 +193,7 @@ export default function DashboardPage() {
               />
             </div>
             <Button variant="ghost" size="icon" className="relative">
-              <BellIcon className="h-5 w-5" />
+              <BellIcon className="w-5 h-5" />
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -256,28 +257,28 @@ export default function DashboardPage() {
                 <div className="flex gap-2 mt-6">
                   <Button
                     variant="outline"
-                    className="rounded-full border-gray-500 text-gray-500"
+                    className="text-gray-500 border-gray-500 rounded-full"
                   >
                     <span className="mr-1.5 h-2 w-2 rounded-full bg-gray-500" />
                     Reset
                   </Button>
                   <Button
                     variant="outline"
-                    className="rounded-full border-blue-500 text-blue-500"
+                    className="text-blue-500 border-blue-500 rounded-full"
                   >
                     <span className="mr-1.5 h-2 w-2 rounded-full bg-blue-500" />
                     No Fraud
                   </Button>
                   <Button
                     variant="outline"
-                    className="rounded-full border-orange-500 text-orange-500"
+                    className="text-orange-500 border-orange-500 rounded-full"
                   >
                     <span className="mr-1.5 h-2 w-2 rounded-full bg-orange-500" />
                     Low Fraud
                   </Button>
                   <Button
                     variant="outline"
-                    className="rounded-full border-red-500 text-red-500"
+                    className="text-red-500 border-red-500 rounded-full"
                   >
                     <span className="mr-1.5 h-2 w-2 rounded-full bg-red-500" />
                     High Fraud
@@ -293,20 +294,20 @@ export default function DashboardPage() {
                       <div className="aspect-video w-80 rounded-xl bg-gradient-to-br from-gray-200 to-gray-300" />
                       <div>
                         {/* Card Status aligned to the right */}
-                        <div className="text-right mb-4">
+                        <div className="mb-4 text-right">
                           <span className="text-sm text-muted-foreground">
                             Card Status:{" "}
                           </span>
-                          <span className="font-bold flex items-center justify-end gap-2">
+                          <span className="flex items-center justify-end gap-2 font-bold">
                             {customer ? (
                               customer.is_locked.toLowerCase() === "true" ? (
                                 <>
-                                  <LockIcon className="h-4 w-4 text-red-500" />
+                                  <LockIcon className="w-4 h-4 text-red-500" />
                                   Locked
                                 </>
                               ) : (
                                 <>
-                                  <UnlockIcon className="h-4 w-4 text-green-500" />
+                                  <UnlockIcon className="w-4 h-4 text-green-500" />
                                   Unlocked
                                 </>
                               )
@@ -344,15 +345,23 @@ export default function DashboardPage() {
                     </div>
                   </CardContent>
                 </Card>
+                <Card className="mt-6">
+                  <CardHeader>
+                    <CardTitle>Voice Verification</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <AudioRecorder />
+                  </CardContent>
+                </Card>
               </div>
 
               {/* Live Transcript */}
-              <aside className="w-full border-l p-6">
+              <aside className="w-full p-6 border-l">
                 <div className="space-y-2">
                   <h2 className="text-lg font-semibold">Live Transcript</h2>
                   <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 rounded-full bg-muted" />
-                    <div className="h-4 w-48 rounded bg-muted" />
+                    <div className="w-10 h-10 rounded-full bg-muted" />
+                    <div className="w-48 h-4 rounded bg-muted" />
                   </div>
                 </div>
               </aside>
