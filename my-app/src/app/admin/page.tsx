@@ -86,10 +86,12 @@ const TransactionBreakdownChart = () => {
         }
 
       const totals: { [key: string]: number } = {};
-      data?.forEach((tx: any) => {
-        const key = tx[segmentation] || "Unknown";
-        totals[key] = (totals[key] || 0) + tx.amt;
-      });
+      if (data) {
+        data.forEach((tx: any) => {
+          const key = tx[segmentation] || "Unknown";
+          totals[key] = (totals[key] || 0) + tx.amt;
+        });
+      }
 
       const labels = Object.keys(totals);
       const amounts = Object.values(totals);

@@ -254,7 +254,7 @@ async def reset_db() -> dict:
         # Load data from base.csv
         print("Loading data from base.csv...")
         with open(
-            "./experiments/sample_data/base.csv", mode="r", newline=""
+            "./sample_data/base.csv", mode="r", newline=""
         ) as csvfile:
             reader = csv.DictReader(csvfile)
             # Print CSV schema (the header field names)
