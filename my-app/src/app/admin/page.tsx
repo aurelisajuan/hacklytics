@@ -164,7 +164,7 @@ const GoogleHeatMap = () => {
   if (!isLoaded) return <div>Loading maps</div>;
 
   return (
-    <div className="w-full h-full">
+    <div className="w-full h-5/6">
       <GoogleMap
         mapContainerStyle={containerStyle}
         center={center}
