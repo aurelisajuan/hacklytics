@@ -71,7 +71,7 @@ export default function IPhoneBanking() {
     fetchCustomer();
   }, []);
 
-  // Fetch transactions for Lisa Lin using her credit card (cc) number
+  // Fetch initial transactions for Lisa Lin using her credit card (cc) number
   useEffect(() => {
     async function fetchTransactions() {
       if (!customer) return;
@@ -89,9 +89,51 @@ export default function IPhoneBanking() {
     fetchTransactions();
   }, [customer]);
 
+  // Realtime subscription for transactions filtered by customer's credit card number
+  useEffect(() => {
+    if (!customer) return;
+
+    // Create a realtime channel that listens to all changes for transactions with the customer's cc
+    const channel = supabase
+      .channel("transactions-realtime")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "transaction",
+          filter: `cc_num=eq.${customer.cc}`,
+        },
+        (payload) => {
+          // When a new transaction is inserted or updated, update state
+          if (payload.eventType === "INSERT") {
+            setTransactions((prev) => [payload.new as Transaction, ...prev]);
+          } else if (payload.eventType === "UPDATE") {
+            setTransactions((prev) =>
+              prev.map((tx) =>
+                tx.trans_num === (payload.new as Transaction).trans_num
+                  ? (payload.new as Transaction)
+                  : tx
+              )
+            );
+          } else if (payload.eventType === "DELETE") {
+            setTransactions((prev) =>
+              prev.filter((tx) => tx.trans_num !== payload.old.trans_num)
+            );
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [customer]);
+
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-      <div className="relative w-[390px] h-[844px] p-[12px] shadow-2xl">
+    <div className="max-h-screen bg-gray-100 flex items-center justify-center p-4">
+      {/* Set the phone container height to h-screen so it fills the viewport */}
+      <div className="relative w-[390px] h-screen p-[12px] shadow-2xl">
         {/* iPhone Notch */}
         <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-[160px] h-[34px]"></div>
 
@@ -100,7 +142,7 @@ export default function IPhoneBanking() {
           {/* Status Bar */}
           <div className="h-14 w-full bg-white"></div>
 
-          {/* App Content */}
+          {/* App Content - Single scrollable area */}
           <div className="h-full overflow-y-auto pb-20">
             {/* Header */}
             <div className="p-4 flex items-center justify-between">
@@ -112,7 +154,9 @@ export default function IPhoneBanking() {
                 <div>
                   <p className="text-xs text-gray-500">Hello,</p>
                   <p className="font-medium">
-                    {customer ? `${customer.first_name} ${customer.last_name}` : "Loading..."}
+                    {customer
+                      ? `${customer.first_name} ${customer.last_name}`
+                      : "Loading..."}
                   </p>
                 </div>
               </div>
@@ -179,9 +223,9 @@ export default function IPhoneBanking() {
                           <FileText className="h-5 w-5 text-gray-600" />
                         </div>
                         <div>
-                          <p className="font-medium">{transaction.category}</p>
+                          <p className="font-medium">{transaction.merchant}</p>
                           <p className="text-sm text-gray-500">
-                            {transaction.merchant}
+                            {transaction.category}
                           </p>
                         </div>
                       </div>
