@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import {
   Bell,
   Home,
@@ -12,45 +13,82 @@ import {
   Menu,
 } from "lucide-react";
 import Image from "next/image";
-import { useState } from "react";
+import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { createClient } from "@supabase/supabase-js";
 
-// Sample transaction data (if needed)
-interface Transaction {
-  id: number;
-  type: string;
-  amount: number;
-  date: string;
-  location: string;
+// Define the Customer interface
+interface Customer {
+  id?: string;
+  first_name: string;
+  last_name: string;
+  cc: string;
+  // other fields omitted for brevity
 }
 
-const transactions: Transaction[] = [
-  {
-    id: 1,
-    type: "Shopping",
-    amount: 50.75,
-    date: "19 May",
-    location: "ZARA.com",
-  },
-  {
-    id: 2,
-    type: "Drink",
-    amount: 8.99,
-    date: "19 May",
-    location: "GEEK Hub",
-  },
-  {
-    id: 3,
-    type: "Electricity Bill",
-    amount: 30.25,
-    date: "12 April",
-    location: "EVNHCM",
-  },
-];
+// Define the Transaction interface (adapted to your database schema)
+interface Transaction {
+  merchant: string;
+  category: string;
+  trans_num: string;
+  trans_date: string;
+  trans_time: string;
+  amt: number;
+  merch_lat: number;
+  merch_long: number;
+  is_fraud: string;
+  cc_num: string;
+  user_id: string;
+}
+
+// Initialize Supabase client
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_KEY || "";
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default function IPhoneBanking() {
+  const [customer, setCustomer] = useState<Customer | null>(null);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+
+  // Fetch Lisa Lin's customer record
+  useEffect(() => {
+    async function fetchCustomer() {
+      const { data, error } = await supabase
+        .from("customer")
+        .select("*")
+        .eq("first_name", "Lisa")
+        .eq("last_name", "Lin")
+        .single();
+      if (error) {
+        console.error("Error fetching customer:", error);
+        return;
+      }
+      setCustomer(data);
+    }
+    fetchCustomer();
+  }, []);
+
+  // Fetch transactions for Lisa Lin using her credit card (cc) number
+  useEffect(() => {
+    async function fetchTransactions() {
+      if (!customer) return;
+      const { data, error } = await supabase
+        .from("transaction")
+        .select("*")
+        .eq("cc_num", customer.cc)
+        .order("trans_date", { ascending: false });
+      if (error) {
+        console.error("Error fetching transactions:", error);
+        return;
+      }
+      setTransactions(data || []);
+    }
+    fetchTransactions();
+  }, [customer]);
+
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
       <div className="relative w-[390px] h-[844px] p-[12px] shadow-2xl">
@@ -73,7 +111,9 @@ export default function IPhoneBanking() {
                 </Avatar>
                 <div>
                   <p className="text-xs text-gray-500">Hello,</p>
-                  <p className="font-medium">John Doe</p>
+                  <p className="font-medium">
+                    {customer ? `${customer.first_name} ${customer.last_name}` : "Loading..."}
+                  </p>
                 </div>
               </div>
               <Button variant="ghost" size="icon">
@@ -109,11 +149,11 @@ export default function IPhoneBanking() {
                 <CardContent className="p-6">
                   <div className="flex justify-between items-start mb-6">
                     <p className="text-2xl font-semibold">$3009.94</p>
-                    <img src="/visa.webp" alt="Mastercard" className="h-8" />
+                    <img src="/visa.webp" alt="Visa" className="h-8" />
                   </div>
                   <div className="space-y-1">
-                    <p className="text-gray-400">Bank of America</p>
-                    <p className="font-mono">5292 •••• •••• 3123</p>
+                    <p className="text-gray-400">Bank of Hacklytixs</p>
+                    <p className="font-mono">4512 •••• •••• 1773</p>
                   </div>
                 </CardContent>
               </Card>
@@ -128,66 +168,54 @@ export default function IPhoneBanking() {
                 </Button>
               </div>
               <div className="space-y-4">
-                {transactions.map((transaction) => (
-                  <div
-                    key={transaction.id}
-                    className="flex items-center justify-between"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 bg-gray-100 rounded-full flex items-center justify-center">
-                        <FileText className="h-5 w-5 text-gray-600" />
+                {transactions.length > 0 ? (
+                  transactions.map((transaction) => (
+                    <div
+                      key={transaction.trans_num}
+                      className="flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 bg-gray-100 rounded-full flex items-center justify-center">
+                          <FileText className="h-5 w-5 text-gray-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium">{transaction.category}</p>
+                          <p className="text-sm text-gray-500">
+                            {transaction.merchant}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium">{transaction.type}</p>
+                      <div className="text-right">
+                        <p className="font-medium">-${transaction.amt.toFixed(2)}</p>
                         <p className="text-sm text-gray-500">
-                          {transaction.location}
+                          {transaction.trans_date}
                         </p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-medium">-${transaction.amount}</p>
-                      <p className="text-sm text-gray-500">
-                        {transaction.date}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  <p>Loading transactions...</p>
+                )}
               </div>
             </div>
           </div>
 
-          {/* Bottom Navigation (Old Navbar Style) */}
+          {/* Bottom Navigation */}
           <div className="absolute bottom-0 left-0 right-0 bg-white border-t">
             <div className="flex justify-between items-center p-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="flex flex-col items-center"
-              >
+              <Button variant="ghost" size="icon" className="flex flex-col items-center">
                 <Home className="h-5 w-5" />
                 <span className="text-xs mt-1">Home</span>
               </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="flex flex-col items-center"
-              >
+              <Button variant="ghost" size="icon" className="flex flex-col items-center">
                 <Wallet className="h-5 w-5" />
                 <span className="text-xs mt-1">Wallet</span>
               </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="flex flex-col items-center text-primary"
-              >
+              <Button variant="ghost" size="icon" className="flex flex-col items-center text-primary">
                 <User className="h-5 w-5" />
                 <span className="text-xs mt-1">Profile</span>
               </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="flex flex-col items-center"
-              >
+              <Button variant="ghost" size="icon" className="flex flex-col items-center">
                 <Menu className="h-5 w-5" />
                 <span className="text-xs mt-1">More</span>
               </Button>
