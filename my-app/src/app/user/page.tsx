@@ -97,11 +97,10 @@ function Sidebar({
         <Link
           href="/admin"
           onClick={() => setActiveLink("dashboard")}
-          className={`mb-1 flex items-center gap-2 rounded-lg px-4 py-2 ${
-            activeLink === "dashboard"
+          className={`mb-1 flex items-center gap-2 rounded-lg px-4 py-2 ${activeLink === "dashboard"
               ? "bg-[#E5F3FF] text-sky-600"
               : "text-gray-500 hover:bg-[#E5F3FF] hover:text-sky-600"
-          }`}
+            }`}
         >
           <HomeIcon className="w-5 h-5" />
           Dashboard
@@ -109,11 +108,10 @@ function Sidebar({
         <Link
           href="/user"
           onClick={() => setActiveLink("user-profiles")}
-          className={`mb-1 flex items-center gap-2 rounded-lg px-4 py-2 ${
-            activeLink === "user-profiles"
+          className={`mb-1 flex items-center gap-2 rounded-lg px-4 py-2 ${activeLink === "user-profiles"
               ? "bg-[#E5F3FF] text-sky-600"
               : "text-gray-500 hover:bg-[#E5F3FF] hover:text-sky-600"
-          }`}
+            }`}
         >
           <UserCircle className="w-5 h-5" />
           User Profiles
@@ -121,11 +119,10 @@ function Sidebar({
         <Link
           href="#"
           onClick={() => setActiveLink("settings")}
-          className={`flex items-center gap-2 rounded-lg px-4 py-2 ${
-            activeLink === "settings"
+          className={`flex items-center gap-2 rounded-lg px-4 py-2 ${activeLink === "settings"
               ? "bg-[#E5F3FF] text-sky-600"
               : "text-gray-500 hover:bg-[#E5F3FF] hover:text-sky-600"
-          }`}
+            }`}
         >
           <Settings className="w-5 h-5" />
           Settings
@@ -185,10 +182,10 @@ export default function DashboardPage() {
   async function handleReset() {
     try {
       // Call your Next.js API route that proxies the request to your Python backend
-      const response = await fetch("/api/reset", {
+      const response = await fetch("https://fitting-correctly-lioness.ngrok-free.app/reset", {
         method: "DELETE",
       });
-  
+
       const contentType = response.headers.get("content-type");
       let result;
       if (contentType && contentType.includes("application/json")) {
@@ -196,12 +193,12 @@ export default function DashboardPage() {
       } else {
         result = { message: "Non-JSON response", data: await response.text() };
       }
-  
+
       if (!response.ok) {
         console.error("Reset failed:", result.error || result.message || result);
         return;
       }
-  
+
       console.log("Reset succeeded:", result.success || result.message);
       // After resetting, re-fetch the latest transaction for Lisa Lin
       await fetchTransaction();
@@ -209,7 +206,7 @@ export default function DashboardPage() {
       console.error("Error calling the reset API route:", error);
     }
   }
-  
+
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
