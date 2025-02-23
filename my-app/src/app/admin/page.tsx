@@ -80,10 +80,10 @@ const TransactionBreakdownChart = () => {
         .from("transaction")
         .select(selectColumns);
 
-        if (error) {
-          console.log(error);
-          return;
-        }
+      if (error) {
+        console.log(error);
+        return;
+      }
 
       const totals: { [key: string]: number } = {};
       data?.forEach((tx: any) => {
@@ -122,8 +122,10 @@ const TransactionBreakdownChart = () => {
   }, [segmentation]);
 
   return (
-    <div className="p-4">
-      <h2 className="text-xl font-semibold mb-4">Transaction Breakdown Pie Chart</h2>
+    <div className="p-2">
+      {/* <h2 className="text-xl font-semibold mb-4">
+        Transaction Breakdown Pie Chart
+      </h2> */}
       <div className="mb-4">
         <label htmlFor="segmentation" className="mr-2">
           Segment by:
@@ -139,7 +141,18 @@ const TransactionBreakdownChart = () => {
           <option value="city">City</option>
         </select>
       </div>
-      {chartData ? <Pie data={chartData} /> : <p>Loading chart data...</p>}
+      <div style={{ width: "350px", height: "350px" }}>
+        {chartData ? (
+          <Pie
+            data={chartData}
+            options={{
+              maintainAspectRatio: false,
+            }}
+          />
+        ) : (
+          <p>Loading chart data...</p>
+        )}
+      </div>
     </div>
   );
 };
@@ -174,8 +187,8 @@ const LiveRiskTrendLineChart = () => {
       });
 
       // Sort timestamps
-      const labels = Object.keys(trend).sort((a, b) =>
-        new Date(a).getTime() - new Date(b).getTime()
+      const labels = Object.keys(trend).sort(
+        (a, b) => new Date(a).getTime() - new Date(b).getTime()
       );
       const averages = labels.map(
         (label) => trend[label].total / trend[label].count
@@ -199,7 +212,11 @@ const LiveRiskTrendLineChart = () => {
   return (
     <div className="p-4">
       <h2 className="text-xl font-semibold mb-4">Live Risk Trend Line Graph</h2>
-      {chartData ? <Line data={chartData} /> : <p>Loading risk trend data...</p>}
+      {chartData ? (
+        <Line data={chartData} />
+      ) : (
+        <p>Loading risk trend data...</p>
+      )}
     </div>
   );
 };
@@ -262,7 +279,9 @@ const TransactionVolumeBarChart = () => {
 
   return (
     <div className="p-4">
-      <h2 className="text-xl font-semibold mb-4">Transaction Volume Bar Chart</h2>
+      {/* <h2 className="text-xl font-semibold mb-4">
+        Transaction Volume Bar Chart
+      </h2> */}
       {chartData ? <Bar data={chartData} /> : <p>Loading volume data...</p>}
     </div>
   );
@@ -318,7 +337,9 @@ const RiskDistributionHistogram = () => {
 
   return (
     <div className="p-4">
-      <h2 className="text-xl font-semibold mb-4">Risk Distribution Histogram</h2>
+      <h2 className="text-xl font-semibold mb-4">
+        Risk Distribution Histogram
+      </h2>
       {chartData ? <Bar data={chartData} /> : <p>Loading histogram data...</p>}
     </div>
   );
@@ -343,8 +364,9 @@ const RiskGaugeWidget = () => {
 
       // Compute total transactions and count high-risk transactions.
       const total = data.length;
-      const highRiskCount = data.filter((tx: any) => tx.risk_score >= riskThreshold)
-        .length;
+      const highRiskCount = data.filter(
+        (tx: any) => tx.risk_score >= riskThreshold
+      ).length;
       const highRiskPercentage = total ? (highRiskCount / total) * 100 : 0;
 
       setChartData({
@@ -362,12 +384,7 @@ const RiskGaugeWidget = () => {
 
   return (
     <div className="p-4">
-      <h2 className="text-xl font-semibold mb-4">High Risk Transactions Gauge</h2>
-      {chartData ? (
-        <Doughnut data={chartData} />
-      ) : (
-        <p>Loading gauge data...</p>
-      )}
+      {chartData ? <Doughnut data={chartData} /> : <p>Loading gauge data...</p>}
     </div>
   );
 };
@@ -454,7 +471,9 @@ export default function Dashboard() {
           console.log("Realtime update received:", payload);
           const newUpdate = payload.new as Transaction;
           setUpdates((prev) => {
-            if (prev.find((update) => update.trans_num === newUpdate.trans_num)) {
+            if (
+              prev.find((update) => update.trans_num === newUpdate.trans_num)
+            ) {
               return prev;
             }
             return [...prev, newUpdate];
@@ -471,7 +490,7 @@ export default function Dashboard() {
   return (
     <div className="flex h-screen overflow-hidden">
       <Sidebar activeLink={activeLink} setActiveLink={setActiveLink} />
-      <div className="flex flex-1 flex-col">
+      <div className="flex flex-1 flex-col bg-gray-50">
         <header className="flex h-16 items-center border-b border-gray-200 bg-white px-6">
           <h1 className="text-2xl font-semibold">Dashboard</h1>
           <div className="ml-auto flex items-center gap-4">
@@ -504,91 +523,75 @@ export default function Dashboard() {
             </DropdownMenu>
           </div>
         </header>
-        <main className="flex-1 p-6 overflow-auto">
-          <div className="grid gap-6">
+        <main className="flex-1 p-3 overflow-auto">
+          <div className="grid gap-3">
             {/* Middle row */}
-            <div className="grid gap-6 md:grid-cols-2">
-              <Card className="rounded-lg border shadow-sm">
-                <CardHeader className="border-b bg-white px-6 py-4">
-                  <CardTitle>User Growth Trend</CardTitle>
+            <div className="grid gap-3 md:grid-cols-3">
+              <Card className="rounded-lg border-r shadow-sm">
+                <CardHeader className="border-b bg-white px-6">
+                  <CardTitle>Transaction Breakdown Pie Chart</CardTitle>
                 </CardHeader>
-                <CardContent className="p-6">
-                  <div className="h-[300px] rounded-lg bg-gray-50" />
+                <CardContent className="p-6 border-r">
+                  <TransactionBreakdownChart />
                 </CardContent>
               </Card>
-              <Card className="rounded-lg border shadow-sm">
-                <CardHeader className="border-b bg-white px-6 py-4">
-                  <CardTitle>User Activity by Time of Day</CardTitle>
+
+              <Card className="rounded-lg border-r shadow-sm">
+                <CardHeader className="border-b bg-white px-6">
+                  <CardTitle>Transaction Volume Bar Chart</CardTitle>
                 </CardHeader>
-                <CardContent className="p-6">
-                  <div className="h-[300px] rounded-lg bg-gray-50" />
+                <CardContent className="p-6 border-r">
+                  <TransactionVolumeBarChart />
+                </CardContent>
+              </Card>
+
+              <Card className="rounded-lg border-r shadow-sm">
+                <CardHeader className="border-b bg-white px-6">
+                  <CardTitle>Gauge/ Dial Widgets</CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 border-r">
+                  <RiskGaugeWidget />
                 </CardContent>
               </Card>
             </div>
             {/* Bottom row */}
             <div className="grid gap-6 md:grid-cols-3">
-              <Card className="rounded-lg border shadow-sm md:col-span-2">
-                <CardHeader className="border-b bg-white px-6 py-4">
+              <Card className="rounded-lg border-r shadow-sm md:col-span-2">
+                <CardHeader className="border-b bg-white px-6">
                   <CardTitle>User Demographics</CardTitle>
                 </CardHeader>
-                <CardContent className="p-6">
+                <CardContent className="p-6 border-r">
                   <div className="h-[300px] rounded-lg bg-gray-50" />
                 </CardContent>
               </Card>
-              <Card className="rounded-lg border shadow-sm">
-                <CardHeader className="border-b bg-white px-6 py-4">
+              <Card className="rounded-lg border-r shadow-sm">
+                <CardHeader className="border-b bg-white px-6">
                   <CardTitle>Top User Locations</CardTitle>
                 </CardHeader>
-                <CardContent className="p-6">
+                <CardContent className="p-6 border-r">
                   <div className="h-[300px] rounded-lg bg-gray-50" />
                 </CardContent>
               </Card>
             </div>
-            {/* Transaction Breakdown Chart */}
-            <div className="mt-6">
-              <Card className="rounded-lg border shadow-sm">
-                <CardHeader className="border-b bg-white px-6 py-4">
-                  <CardTitle>Transaction Breakdown</CardTitle>
-                </CardHeader>
-                <CardContent className="p-6">
-                  <TransactionBreakdownChart />
-                </CardContent>
-              </Card>
-            </div>
+
             {/* New Risk & Volume Charts */}
             <div className="mt-6 grid gap-6 md:grid-cols-2">
-              <Card className="rounded-lg border shadow-sm">
-                <CardHeader className="border-b bg-white px-6 py-4">
+              <Card className="rounded-lg border-r shadow-sm">
+                <CardHeader className="border-b bg-white px-6">
                   <CardTitle>Live Risk Trend</CardTitle>
                 </CardHeader>
-                <CardContent className="p-6">
+                <CardContent className="p-6 border-r">
                   <LiveRiskTrendLineChart />
                 </CardContent>
               </Card>
-              <Card className="rounded-lg border shadow-sm">
-                <CardHeader className="border-b bg-white px-6 py-4">
-                  <CardTitle>Transaction Volume</CardTitle>
-                </CardHeader>
-                <CardContent className="p-6">
-                  <TransactionVolumeBarChart />
-                </CardContent>
-              </Card>
             </div>
             <div className="mt-6 grid gap-6 md:grid-cols-2">
-              <Card className="rounded-lg border shadow-sm">
-                <CardHeader className="border-b bg-white px-6 py-4">
+              <Card className="rounded-lg border-r shadow-sm">
+                <CardHeader className="border-b bg-white px-6">
                   <CardTitle>Risk Distribution</CardTitle>
                 </CardHeader>
-                <CardContent className="p-6">
+                <CardContent className="p-6 border-r">
                   <RiskDistributionHistogram />
-                </CardContent>
-              </Card>
-              <Card className="rounded-lg border shadow-sm">
-                <CardHeader className="border-b bg-white px-6 py-4">
-                  <CardTitle>Risk Gauge</CardTitle>
-                </CardHeader>
-                <CardContent className="p-6">
-                  <RiskGaugeWidget />
                 </CardContent>
               </Card>
             </div>
