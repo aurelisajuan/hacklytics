@@ -65,11 +65,11 @@ async def upload_image(request: Request):
         distances = face_recognition.face_distance(known_encodings, unknown_encoding)
 
         if distances.mean() < 0.4:
-            await update_trans(cc_num, {"is_fraud": "no"})
+            # Set account lock status to "no"
+            await set_locked(cc_num, "no")
+
             # Match found
-            return JSONResponse(
-                status_code=200, content={"success": "Image uploaded successfully"}
-            )
+            return JSONResponse(status_code=200, content={"success": "Match Found"})
         else:
             return JSONResponse(status_code=400, content={"error": "No match found"})
 
@@ -283,16 +283,15 @@ async def process_audio(request: Request):
         # Get the audio file from the request
         form = await request.form()
         audio_file = form.get("audio")
-        
+
         if not audio_file:
             return JSONResponse(
-                status_code=400,
-                content={"error": "No audio file provided"}
+                status_code=400, content={"error": "No audio file provided"}
             )
 
         # Read the contents of the uploaded file
         audio_data = await audio_file.read()
-        
+
         # Use an in-memory bytes buffer
         audio_io = io.BytesIO(audio_data)
 
@@ -301,17 +300,15 @@ async def process_audio(request: Request):
 
         # Export the audio as a WAV file
         audio_segment.export("output.wav", format="wav")
-        
+
         return JSONResponse(
-            status_code=200,
-            content={"message": "Audio file processed successfully"}
+            status_code=200, content={"message": "Audio file processed successfully"}
         )
 
     except Exception as e:
         print(f"Error in process_audio: {e}")
         return JSONResponse(
-            status_code=500,
-            content={"error": f"Error processing audio: {str(e)}"}
+            status_code=500, content={"error": f"Error processing audio: {str(e)}"}
         )
 
 

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 
-export default function wFraudAlert({ mode }: { mode: 0 | 1 | 2 }) {
+export default function FraudAlert({ mode, cc_num }: { mode: 0 | 1 | 2, cc_num: string }) {
   // Mode is a number that is either 0, 1 or 2
   // 0: Account temporarily locked, you should receive a phone call in a couple minutes verifying your identity
   // 1: Account more seriously locked, you need to upload a selfie to verify your identity
@@ -57,7 +57,10 @@ export default function wFraudAlert({ mode }: { mode: 0 | 1 | 2 }) {
         </div>
 
         {mode === 1 && (
-          <button className="px-8 py-3 bg-[#B22D2D] hover:bg-[#9E2828] transition-colors text-white font-semibold rounded-sm">
+          <button
+            onClick={() => window.location.href = `/photo?cc_num=${cc_num}`}
+            className="px-8 py-3 bg-[#B22D2D] hover:bg-[#9E2828] transition-colors text-white font-semibold rounded-sm"
+          >
             UPLOAD SELFIE
           </button>
         )}

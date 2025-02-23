@@ -1,129 +1,178 @@
 "use client";
 
 import { useState } from "react";
-import { Camera, Home, Wallet, User, Menu } from "lucide-react";
+import { Camera, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
+import { useSearchParams } from "next/navigation";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import TransactionApproved from "@/components/approved";
 
 export default function PhotoUpload() {
+    const searchParams = useSearchParams();
+    const cc_num = searchParams.get('cc_num');
     const [image, setImage] = useState<string | null>(null);
+    const [showApproved, setShowApproved] = useState(false);
+    const [isProcessing, setIsProcessing] = useState(false);
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
-        setImage(URL.createObjectURL(e.target.files[0]));
+            setImage(URL.createObjectURL(e.target.files[0]));
         }
     };
 
+    const handleSubmit = async () => {
+        if (!image || !cc_num) return;
+        setIsProcessing(true);
+
+        try {
+            // Convert image to base64
+            const response = await fetch(image);
+            const blob = await response.blob();
+            const reader = new FileReader();
+
+            reader.onloadend = async () => {
+                const base64data = (reader.result as string).split(',')[1];
+
+                try {
+                    const res = await fetch('http://localhost:8000/upload-image', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            image_url: base64data,
+                            cc_num: cc_num
+                        }),
+                    });
+
+                    if (res.ok) {
+                        setShowApproved(true);
+                    } else {
+                        alert("Identity not verified. Please try again.");
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert("An error occurred. Please try again.");
+                } finally {
+                    setIsProcessing(false);
+                }
+            };
+
+            reader.readAsDataURL(blob);
+        } catch (error) {
+            console.error('Error:', error);
+            alert("An error occurred. Please try again.");
+            setIsProcessing(false);
+        }
+    };
+
+    if (showApproved) {
+        return <TransactionApproved />;
+    }
+
     return (
         <div className="max-h-screen bg-gray-100 flex items-center justify-center p-4">
-        {/* Phone container */}
-        <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.5 }}
-            className="relative w-[390px] h-screen p-[12px] shadow-2xl"
-        >
-            {/* iPhone Notch */}
-            <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-[160px] h-[34px]"></div>
+            {/* Phone container */}
+            <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.5 }}
+                className="relative w-[390px] h-screen p-[12px] shadow-2xl"
+            >
+                {/* iPhone Notch */}
+                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-[160px] h-[34px]"></div>
 
-            {/* Screen Content */}
-            <div className="relative w-full h-full bg-white rounded-[38px] overflow-hidden">
-            {/* Status Bar */}
-            <div className="h-14 w-full bg-white"></div>
+                {/* Screen Content */}
+                <div className="relative w-full h-full bg-white rounded-[38px] overflow-hidden">
+                    {/* Status Bar */}
+                    <div className="h-14 w-full bg-white"></div>
 
-            {/* App Content */}
-            <div className="h-full overflow-y-auto pb-20">
-                <div className="flex flex-col items-center justify-center px-4">
-                <Card>
-                    <CardContent className="p-8 flex flex-col items-center">
-                    <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{
-                        delay: 0.2,
-                        type: "spring",
-                        stiffness: 260,
-                        damping: 20,
-                        }}
-                    >
-                        <Camera className="h-16 w-16 text-gray-500 mb-6" />
-                    </motion.div>
-                    <h2 className="text-2xl font-bold mb-3 text-gray-900">
-                        Upload Your Picture
-                    </h2>
-                    <p className="text-center text-sm text-gray-600 mb-6">
-                        Take a picture or select one from your gallery to get started.
-                    </p>
-                    {image ? (
-                        <motion.img
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5 }}
-                        src={image}
-                        alt="Preview"
-                        className="mb-6 rounded-2xl max-h-64 object-cover w-full shadow-md"
-                        />
-                    ) : (
-                        <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5 }}
-                        className="mb-6 w-full h-64 bg-gradient-to-br from-gray-50 to-gray-50 rounded-2xl flex items-center justify-center border-2 border-dashed border-gray-300"
-                        >
-                        <span className="text-gray-400">No image selected</span>
-                        </motion.div>
-                    )}
-                    <label htmlFor="file-upload" className="w-full">
-                        <Button
-                        variant="default"
-                        size="lg"
-                        className="w-full flex items-center justify-center py-6 bg-gray-600 hover:bg-gray-700 transition-colors duration-300"
-                        >
-                        <Camera className="h-5 w-5 mr-2" />
-                        <span className="font-medium">Take or Upload Picture</span>
-                        </Button>
-                    </label>
-                    <input
-                        id="file-upload"
-                        type="file"
-                        accept="image/*"
-                        capture="environment"
-                        onChange={handleImageChange}
-                        className="hidden"
-                    />
-                    </CardContent>
-                </Card>
+                    {/* App Content */}
+                    <div className="h-full overflow-y-auto pb-20">
+                        <div className="flex flex-col items-center justify-center px-4">
+                            <Card>
+                                <CardContent className="p-8 flex flex-col items-center">
+                                    <motion.div
+                                        initial={{ scale: 0 }}
+                                        animate={{ scale: 1 }}
+                                        transition={{
+                                            delay: 0.2,
+                                            type: "spring",
+                                            stiffness: 260,
+                                            damping: 20,
+                                        }}
+                                    >
+                                        <Camera className="h-16 w-16 text-gray-500 mb-6" />
+                                    </motion.div>
+                                    <h2 className="text-2xl font-bold mb-3 text-gray-900">
+                                        Upload Your Picture
+                                    </h2>
+                                    <p className="text-center text-sm text-gray-600 mb-6">
+                                        Take a picture or select one from your gallery to get started.
+                                    </p>
+                                    {image ? (
+                                        <>
+                                            <motion.img
+                                                initial={{ opacity: 0, y: 20 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                transition={{ duration: 0.5 }}
+                                                src={image}
+                                                alt="Preview"
+                                                className="mb-6 rounded-2xl max-h-64 object-cover w-full shadow-md"
+                                            />
+                                            <Button
+                                                onClick={handleSubmit}
+                                                variant="default"
+                                                size="lg"
+                                                disabled={isProcessing}
+                                                className="w-full mb-4 bg-green-600 hover:bg-green-700"
+                                            >
+                                                {isProcessing ? (
+                                                    <>
+                                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                        Processing...
+                                                    </>
+                                                ) : (
+                                                    'Submit Photo'
+                                                )}
+                                            </Button>
+                                        </>
+                                    ) : (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 20 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ duration: 0.5 }}
+                                            className="mb-6 w-full h-64 bg-gradient-to-br from-gray-50 to-gray-50 rounded-2xl flex items-center justify-center border-2 border-dashed border-gray-300"
+                                        >
+                                            <span className="text-gray-400">No image selected</span>
+                                        </motion.div>
+                                    )}
+                                    <input
+                                        id="file-upload"
+                                        type="file"
+                                        accept="image/*"
+                                        capture="environment"
+                                        onChange={handleImageChange}
+                                        className="hidden"
+                                    />
+                                    <Button
+                                        onClick={() => document.getElementById('file-upload')?.click()}
+                                        variant="default"
+                                        size="lg"
+                                        disabled={isProcessing}
+                                        className="w-full flex items-center justify-center py-6 bg-gray-600 hover:bg-gray-700 transition-colors duration-300"
+                                    >
+                                        <Camera className="h-5 w-5 mr-2" />
+                                        <span className="font-medium">Take or Upload Picture</span>
+                                    </Button>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    </div>
                 </div>
-            </div>
-
-            {/* Bottom Navigation */}
-            <div className="absolute bottom-0 left-0 right-0 bg-white">
-                <div className="flex justify-between items-center p-4">
-                <Button variant="ghost" size="icon" className="flex flex-col items-center">
-                    <Home className="h-5 w-5" />
-                    <span className="text-xs mt-1">Home</span>
-                </Button>
-                <Button variant="ghost" size="icon" className="flex flex-col items-center">
-                    <Wallet className="h-5 w-5" />
-                    <span className="text-xs mt-1">Wallet</span>
-                </Button>
-                <Button variant="ghost" size="icon" className="flex flex-col items-center text-primary">
-                    <User className="h-5 w-5" />
-                    <span className="text-xs mt-1">Profile</span>
-                </Button>
-                <Button variant="ghost" size="icon" className="flex flex-col items-center">
-                    <Menu className="h-5 w-5" />
-                    <span className="text-xs mt-1">More</span>
-                </Button>
-                </div>
-            </div>
-            </div>
-
-            {/* Home Indicator */}
-            <div className="absolute bottom-[8px] left-1/2 transform -translate-x-1/2 w-[134px] h-[5px] bg-white rounded-full"></div>
-        </motion.div>
+            </motion.div>
         </div>
     );
 }

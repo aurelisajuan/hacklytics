@@ -1,7 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
 import FraudAlert from "@/components/alert";
-import TransactionApproved from "@/components/approved";
 import Profile from "@/components/profile";
 import { createClient } from "@supabase/supabase-js";
 
@@ -48,7 +47,7 @@ const Home = () => {
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
 
-  // Fetch Lisa Lin's customer record
+  // Fetch Lisa Lin's customer record and set up realtime subscriptions
   useEffect(() => {
     async function fetchCustomer() {
       const { data, error } = await supabase
@@ -57,70 +56,69 @@ const Home = () => {
         .eq("first_name", "Lisa")
         .eq("last_name", "Lin")
         .single();
+
       if (error) {
         console.error("Error fetching customer:", error);
         return;
       }
+
       setCustomer(data);
+
+      // Fetch initial transactions once we have the customer
+      const { data: transData, error: transError } = await supabase
+        .from("transaction")
+        .select("*")
+        .eq("cc_num", data.cc)
+        .order("trans_date", { ascending: false });
+
+      if (!transError && transData) {
+        setTransactions(transData);
+      }
+
+      // Set up realtime subscriptions
+      const customerChannel = supabase
+        .channel('customer-channel')
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'customer',
+            filter: `id=eq.${data.id}`,
+          },
+          (payload) => {
+            console.log('Customer update received:', payload.new);
+            setCustomer(payload.new as Customer);
+          }
+        )
+        .subscribe();
+
+      const transactionChannel = supabase
+        .channel('transactions-channel')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'transaction',
+            filter: `cc_num=eq.${data.cc}`,
+          },
+          (payload) => {
+            console.log('New transaction received:', payload.new);
+            setTransactions((prevTransactions) => [payload.new as Transaction, ...prevTransactions]);
+          }
+        )
+        .subscribe();
+
+      // Clean up subscriptions on unmount
+      return () => {
+        supabase.removeChannel(customerChannel);
+        supabase.removeChannel(transactionChannel);
+      };
     }
+
     fetchCustomer();
   }, []);
-
-  useEffect(() => {
-    if (!customer) return;
-
-    // Create a channel for realtime customer updates
-    const customerChannel = supabase
-      .channel('customer-channel')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'customer',
-          filter: `id=eq.${customer.id}`,
-        },
-        (payload) => {
-          console.log('Customer update received:', payload.new);
-          setCustomer(payload.new);
-        }
-      )
-      .subscribe();
-
-    // Clean up the subscription on unmount or customer change
-    return () => {
-      supabase.removeChannel(customerChannel);
-    };
-  }, [customer]);
-
-
-  // Fetch transactions for Lisa Lin using her credit card (cc) number
-  useEffect(() => {
-    if (!customer) return;
-
-    // Create a channel for realtime updates
-    const channel = supabase
-      .channel('transactions-channel')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'transaction',
-          filter: `cc_num=eq.${customer.cc}`,
-        },
-        (payload) => {
-          console.log('New transaction received:', payload.new);
-          setTransactions((prevTransactions) => [payload.new, ...prevTransactions]);
-        }
-      )
-      .subscribe();
-
-    // Cleanup the subscription on unmount
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [customer]);
 
   console.log(customer)
 
@@ -130,9 +128,8 @@ const Home = () => {
   if (customer.is_locked === 'no') {
     return <Profile customer={customer} transactions={transactions} />;
   } else {
-    return <FraudAlert mode={page_map[customer.is_locked]} />;
+    return <FraudAlert mode={page_map[customer.is_locked]} cc_num={customer.cc} />;
   }
-
 
 };
 
