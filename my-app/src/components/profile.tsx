@@ -1,10 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import {
   Bell,
   Home,
-  MoreHorizontal,
   Send,
   Receipt,
   FileText,
@@ -12,13 +10,10 @@ import {
   User,
   Menu,
 } from "lucide-react";
-import Image from "next/image";
-import Link from "next/link";
+
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { createClient } from "@supabase/supabase-js";
 
 // Define the Customer interface
 interface Customer {
@@ -44,51 +39,12 @@ interface Transaction {
   user_id: string;
 }
 
-// Initialize Supabase client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_KEY || "";
-const supabase = createClient(supabaseUrl, supabaseKey);
+interface ProfileProps {
+  customer: Customer;
+  transactions: Transaction[];
+}
 
-export default function IPhoneBanking() {
-  const [customer, setCustomer] = useState<Customer | null>(null);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-
-  // Fetch Lisa Lin's customer record
-  useEffect(() => {
-    async function fetchCustomer() {
-      const { data, error } = await supabase
-        .from("customer")
-        .select("*")
-        .eq("first_name", "Lisa")
-        .eq("last_name", "Lin")
-        .single();
-      if (error) {
-        console.error("Error fetching customer:", error);
-        return;
-      }
-      setCustomer(data);
-    }
-    fetchCustomer();
-  }, []);
-
-  // Fetch transactions for Lisa Lin using her credit card (cc) number
-  useEffect(() => {
-    async function fetchTransactions() {
-      if (!customer) return;
-      const { data, error } = await supabase
-        .from("transaction")
-        .select("*")
-        .eq("cc_num", customer.cc)
-        .order("trans_date", { ascending: false });
-      if (error) {
-        console.error("Error fetching transactions:", error);
-        return;
-      }
-      setTransactions(data || []);
-    }
-    fetchTransactions();
-  }, [customer]);
-
+export default function Profile({ customer, transactions }: ProfileProps) {
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
       <div className="relative w-[390px] h-[844px] p-[12px] shadow-2xl">
