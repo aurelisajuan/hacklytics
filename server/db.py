@@ -156,3 +156,40 @@ def update_trans(trans_num: str, updated_fields: dict) -> dict:
 # )
 
 # print("Update result:", result)
+
+
+def get_cust ( cc_num: str ) -> dict:
+    """
+    Get a customer by credit card number.
+
+    Args:
+        cc_num (str): The credit card number to search for.
+
+    Returns:
+        dict: A dict describing the outcome, e.g.:
+            {
+                "success": "Found 1 customer.",
+                "data": [ { ...customer row... } ]
+            }
+            or
+            {
+                "error": "No customer found with credit card number: ..."
+            }
+    """
+    try:
+        response = (
+            supabase.table("customer")
+            .select("*")
+            .eq("cc", cc_num)
+            .execute()
+        )
+
+        customers = response.data or []
+
+        if not customers:
+            return {"error": f"No customer found with credit card number: {cc_num}"}
+
+        return {"success": f"Found {len(customers)} customer.", "data": customers}
+
+    except Exception as e:
+        return {"error": f"Exception while getting customer by cc_num {cc_num}: {e}"}
