@@ -42,12 +42,12 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 async def get_transaction(request: Request):
     try:
         data = await request.json()
-        transaction_id = data.get("id")
+        mode = data.get("mode")
 
         # Use ml model to detect fraud
-        fraud = 0
+        mode = 0
 
-        if fraud < 0.4:
+        if mode < 0.4:
             # No fraud detected
 
             # Here insert transaction into db with fraud false
@@ -57,7 +57,7 @@ async def get_transaction(request: Request):
                 content={"success": "Transaction inserted successfully"},
             )
 
-        elif fraud < 0.7:
+        elif mode < 0.7:
             # Low Fraud
 
             # Here insert transaaction into db with fraud pending
