@@ -288,6 +288,12 @@ class LlmClient:
                         {"is_fraud": "yes" if response == "no" else "no"},
                     )
 
+                    if response == "no":
+                        await set_locked(
+                            self.transaction_details.get("cc_num"),
+                            "yes",
+                        )
+
                     new_messages.append(
                         {
                             "role": "tool",
@@ -307,6 +313,11 @@ class LlmClient:
                     await update_trans(
                         self.transaction_details.get("trans_num"),
                         {"is_fraud": "yes"},
+                    )
+
+                    await set_locked(
+                        self.transaction_details.get("cc_num"),
+                        "yes",
                     )
 
                     new_messages.append(
