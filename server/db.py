@@ -20,6 +20,7 @@ async def insert_trans(
     merch_lat: float,
     merch_long: float,
     is_fraud: str,
+    risk_factor: float | None = None,
 ) -> dict:
     """
     Insert a transaction into the database.
@@ -73,6 +74,7 @@ async def insert_trans(
             "is_fraud": is_fraud,
             "cc_num": cc_num,
             "user_id": user_id,
+            "risk_fact": risk_factor,
         }
         print("Inserting new transaction:", new_transaction)
 

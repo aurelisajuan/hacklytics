@@ -110,6 +110,7 @@ async def get_transaction(request: Request):
                 int(details.get("merch_lat")),
                 int(details.get("merch_long")),
                 "false",
+                risk_factor=float(risk_score),
             )
 
             return JSONResponse(
@@ -129,8 +130,11 @@ async def get_transaction(request: Request):
                 int(details.get("merch_lat")),
                 int(details.get("merch_long")),
                 "pending",
+                risk_factor=float(risk_score),
             )
             print("Transaction inserted:", data)
+
+            transaction_num = data[0].get("trans_num")
 
             customer = await get_cust(int(data[0].get("cc_num")))
             print("Customer:", customer)
@@ -167,6 +171,7 @@ async def get_transaction(request: Request):
                 int(details.get("merch_lat")),
                 int(details.get("merch_long")),
                 "pending",
+                risk_factor=float(risk_score),
             )
 
             customer = await get_cust(int(data[0].get("cc_num")))
@@ -313,6 +318,7 @@ async def process_audio(request: Request):
             status_code=500,
             content={"error": f"Error processing audio: {str(e)}"}
         )
+
 
 
 @app.delete("/reset")
