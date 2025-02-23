@@ -9,13 +9,15 @@ from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 import random
 
+model = load_model("fraud_detection_model.h5")
+
 # Silence warnings
 warnings.filterwarnings("ignore")
 logging.getLogger("tensorflow").setLevel(logging.ERROR)
 logging.getLogger("absl").setLevel(logging.ERROR)
 
 
-base_file = "./experiments/sample_data/base.csv"
+base_file = "./sample_data/base.csv"
 
 
 def predict_fraud_for_new_transaction(
@@ -82,11 +84,11 @@ def simulate_transaction(transaction_type: str):
     # Read New Transaction from separate_file
     # ------------------------------
     if transaction_type == "regular":
-        separate_df = pd.read_csv("./experiments/sample_data/no_fraud.csv")
+        separate_df = pd.read_csv("./sample_data/no_fraud.csv")
     elif transaction_type == "low_fraud":
-        separate_df = pd.read_csv("./experiments/sample_data/low_fraud.csv")
+        separate_df = pd.read_csv("./sample_data/low_fraud.csv")
     elif transaction_type == "high_fraud":
-        separate_df = pd.read_csv("./experiments/sample_data/high_fraud.csv")
+        separate_df = pd.read_csv("./sample_data/high_fraud.csv")
 
     # Optionally, filter the separate file as well by user if it contains multiple users
     separate_user_df = separate_df[
@@ -116,7 +118,6 @@ def simulate_transaction(transaction_type: str):
 
     scaler = pickle.load(open("scaler.pkl", "rb"))
     max_seq_len = 10
-    model = load_model("fraud_detection_model.h5")
 
     fraud_prob = predict_fraud_for_new_transaction(
         history, new_transaction, scaler, max_seq_len, model
@@ -125,9 +126,3 @@ def simulate_transaction(transaction_type: str):
         f"Prediction for {first} {last} on transaction index {tx_index}: Fraud Probability = {fraud_prob:.4f}"
     )
     return tx, fraud_prob
-
-
-details, risk_score = simulate_transaction("regular")
-
-print(details)
-print(risk_score)
