@@ -66,6 +66,34 @@ const Home = () => {
     fetchCustomer();
   }, []);
 
+  useEffect(() => {
+    if (!customer) return;
+
+    // Create a channel for realtime customer updates
+    const customerChannel = supabase
+      .channel('customer-channel')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'customer',
+          filter: `id=eq.${customer.id}`,
+        },
+        (payload) => {
+          console.log('Customer update received:', payload.new);
+          setCustomer(payload.new);
+        }
+      )
+      .subscribe();
+
+    // Clean up the subscription on unmount or customer change
+    return () => {
+      supabase.removeChannel(customerChannel);
+    };
+  }, [customer]);
+
+
   // Fetch transactions for Lisa Lin using her credit card (cc) number
   useEffect(() => {
     if (!customer) return;
