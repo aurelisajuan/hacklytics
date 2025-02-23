@@ -20,7 +20,7 @@ interface Customer {
     job: string;
     dob: string;
     gender: string;
-    is_locked: boolean;
+    is_locked: string;
 }
 
 interface Transaction {
@@ -81,7 +81,7 @@ const RealtimeUpdates: React.FC = () => {
             job: "AI Engineer",
             dob: "2002-09-27",
             gender: "M",
-            is_locked: false,
+            is_locked: "no",
         },
         {
             first_name: "Warren",
@@ -96,7 +96,7 @@ const RealtimeUpdates: React.FC = () => {
             job: "Robotic Engineer",
             dob: "2006-03-06",
             gender: "M",
-            is_locked: false,
+            is_locked: "no",
         },
         {
             first_name: "Lia",
@@ -111,7 +111,7 @@ const RealtimeUpdates: React.FC = () => {
             job: "Software Engineer",
             dob: "2004-05-24",
             gender: "F",
-            is_locked: false,
+            is_locked: "no",
         },
         {
             first_name: "Lisa",
@@ -126,7 +126,7 @@ const RealtimeUpdates: React.FC = () => {
             job: "Frontend Engineer",
             dob: "2004-05-24",
             gender: "F",
-            is_locked: false,
+            is_locked: "no",
         },
     ];
 
