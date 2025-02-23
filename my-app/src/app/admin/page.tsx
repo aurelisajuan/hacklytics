@@ -95,9 +95,17 @@ const TransactionBreakdownChart = () => {
         labels,
         datasets: [
           {
-            data: amounts,
-            backgroundColor: ["#FF6384", "#36A2EB", "#FFCE56", "#4BC0C0", "#9966FF", "#FF9F40"],
-            hoverBackgroundColor: ["#FF6384", "#36A2EB", "#FFCE56", "#4BC0C0", "#9966FF", "#FF9F40"],
+        data: amounts,
+        backgroundColor: [
+          "#FFCE56", "#FFDD78", "#FFEBA0", // Yellow shades
+          "#36A2EB", "#5AB3F0", "#7DC4F5", // Blue shades
+          "#4BC0C0", "#6FD1D1", "#92E2E2"  // Green shades
+        ],
+        hoverBackgroundColor: [
+          "#FFCE56", "#FFDD78", "#FFEBA0", // Yellow shades
+          "#36A2EB", "#5AB3F0", "#7DC4F5", // Blue shades
+          "#4BC0C0", "#6FD1D1", "#92E2E2"  // Green shades
+        ],
           },
         ],
       });
@@ -106,7 +114,7 @@ const TransactionBreakdownChart = () => {
   }, [segmentation]);
 
   return (
-    <div className="w-full h-full flex items-center justify-center">
+    <div className="w-full h-5/6 flex items-center justify-center pt-2">
       {chartData ? (
         <Pie
           data={chartData}
@@ -192,7 +200,7 @@ const LiveRiskTrendLineChart = () => {
 
       const trend: { [key: string]: { total: number; count: number } } = {};
       data.forEach((tx: any) => {
-        const timestamp = `${tx.trans_date} ${tx.trans_time}`;
+        const timestamp = `${tx.trans_date}`;
         if (!trend[timestamp]) trend[timestamp] = { total: 0, count: 0 };
         trend[timestamp].total += tx.risk_fact;
         trend[timestamp].count += 1;
@@ -314,7 +322,7 @@ const RiskGaugeWidget = () => {
 
       setChartData({
         labels: ["High Risk", "Low Risk"],
-        datasets: [{ data: [highRiskPercentage, 100 - highRiskPercentage], backgroundColor: ["#FF6384", "#36A2EB"] }],
+        datasets: [{ data: [highRiskPercentage, 100 - highRiskPercentage], backgroundColor: ["#36A2EB", "#FFCE56"] }],
       });
     }
     fetchRiskGauge();
@@ -322,7 +330,7 @@ const RiskGaugeWidget = () => {
 
   return (
     <div className="w-full h-full flex flex-col items-center justify-center p-2">
-      <div className="w-40 h-40">
+      <div className="w-60 h-60 pb-10">
         {chartData ? <Doughnut data={chartData} options={{ maintainAspectRatio: false }} /> : <p>Loading gauge data...</p>}
       </div>
     </div>
@@ -427,7 +435,7 @@ export default function Dashboard() {
               <CardHeader className="border-b p-3 bg-white px-6">
                 <CardTitle>Transaction Volume</CardTitle>
               </CardHeader>
-              <CardContent className="p-2 h-full overflow-hidden">
+              <CardContent className="p-5 pb-10 h-full overflow-hidden">
                 <TransactionVolumeBarChart />
               </CardContent>
             </Card>
@@ -435,7 +443,7 @@ export default function Dashboard() {
               <CardHeader className="border-b p-3 bg-white px-6">
                 <CardTitle>Risk Distribution</CardTitle>
               </CardHeader>
-              <CardContent className="p-2 h-full overflow-hidden">
+              <CardContent className="p-2 pb-10 h-full overflow-hidden">
                 <RiskDistributionHistogram />
               </CardContent>
             </Card>
@@ -461,7 +469,7 @@ export default function Dashboard() {
               <CardHeader className="border-b p-3 bg-white px-6">
                 <CardTitle>Live Risk Trend</CardTitle>
               </CardHeader>
-              <CardContent className="p-2 h-full overflow-hidden">
+              <CardContent className="p-2 pb-14 h-full overflow-hidden">
                 <LiveRiskTrendLineChart />
               </CardContent>
             </Card>
