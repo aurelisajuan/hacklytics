@@ -1,101 +1,177 @@
-import Image from "next/image";
+"use client"
 
-export default function Home() {
+import { useState } from "react"
+import { Bell, Home, Search, Settings, User2 } from "lucide-react"
+import Image from "next/image"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Input } from "@/components/ui/input"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+
+// Sidebar Component: Combines Banklytics branding and navigation
+function Sidebar({ activeLink, setActiveLink }: { activeLink: string; setActiveLink: React.Dispatch<React.SetStateAction<string>> }) {
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <aside className="h-full w-60 border-r border-gray-200 bg-white">
+      {/* Banklytics Branding */}
+      <div className="px-6 py-4">
+        <div className="flex items-center gap-3">
+          {/* Logo Image */}
+          <Image
+            src="/logo.png" // Ensure your logo file is in the /public folder
+            alt="Banklytics Logo"
+            width={40}
+            height={40}
+            className="object-contain"
+          />
+          <span className="text-2xl font-semibold">Banklytics</span>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+      </div>
+
+      {/* Navigation Links */}
+      <nav className="flex h-full flex-col p-4">
+        <Link
+          href="#"
+          onClick={() => setActiveLink("dashboard")}
+          className={`mb-1 flex items-center gap-2 rounded-lg px-4 py-2 ${
+            activeLink === "dashboard"
+              ? "bg-[#E5F3FF] text-sky-600"
+              : "text-gray-500 hover:bg-[#E5F3FF] hover:text-sky-600"
+          }`}
         >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+          <Home className="h-5 w-5" />
+          Dashboard
+        </Link>
+
+        <Link
+          href="/user"
+          onClick={() => setActiveLink("user-profiles")}
+          className={`mb-1 flex items-center gap-2 rounded-lg px-4 py-2 ${
+            activeLink === "user-profiles"
+              ? "bg-[#E5F3FF] text-sky-600"
+              : "text-gray-500 hover:bg-[#E5F3FF] hover:text-sky-600"
+          }`}
         >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+          <User2 className="h-5 w-5" />
+          User Profiles
+        </Link>
+        
+        <Link
+          href="#"
+          onClick={() => setActiveLink("settings")}
+          className={`flex items-center gap-2 rounded-lg px-4 py-2 ${
+            activeLink === "settings"
+              ? "bg-[#E5F3FF] text-sky-600"
+              : "text-gray-500 hover:bg-[#E5F3FF] hover:text-sky-600"
+          }`}
         >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+          <Settings className="h-5 w-5" />
+          Settings
+        </Link>
+      </nav>
+    </aside>
+  )
+}
+
+export default function Dashboard() {
+  const [activeLink, setActiveLink] = useState("dashboard")
+
+  return (
+    <div className="flex h-screen overflow-hidden">
+      {/* Sidebar Component */}
+      <Sidebar activeLink={activeLink} setActiveLink={setActiveLink} />
+
+      {/* Main Content Area */}
+      <div className="flex flex-1 flex-col">
+        {/* Header */}
+        <header className="flex h-16 items-center border-b border-gray-200 bg-white px-6">
+          <h1 className="text-2xl font-semibold">Dashboard</h1>
+          <div className="ml-auto flex items-center gap-4">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search here ..."
+                className="w-[300px] bg-white pl-8"
+              />
+            </div>
+
+            <Button variant="ghost" size="icon" className="relative">
+              <Bell className="h-5 w-5" />
+            </Button>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Avatar>
+                  <AvatarImage src="https://github.com/shadcn.png" />
+                  <AvatarFallback>CN</AvatarFallback>
+                </Avatar>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>Profile</DropdownMenuItem>
+                <DropdownMenuItem>Settings</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>Log out</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </header>
+
+        {/* Main Content */}
+        <main className="flex-1 bg-white p-6 overflow-auto">
+          <div className="grid gap-6">
+            {/* Middle row */}
+            <div className="grid gap-6 md:grid-cols-2">
+              <Card className="rounded-lg border shadow-sm">
+                <CardHeader className="border-b bg-white px-6 py-4">
+                  <CardTitle>User Growth Trend</CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="h-[300px] rounded-lg bg-gray-50" />
+                </CardContent>
+              </Card>
+              <Card className="rounded-lg border shadow-sm">
+                <CardHeader className="border-b bg-white px-6 py-4">
+                  <CardTitle>User Activity by Time of Day</CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="h-[300px] rounded-lg bg-gray-50" />
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Bottom row */}
+            <div className="grid gap-6 md:grid-cols-3">
+              <Card className="rounded-lg border shadow-sm md:col-span-2">
+                <CardHeader className="border-b bg-white px-6 py-4">
+                  <CardTitle>User Demographics</CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="h-[300px] rounded-lg bg-gray-50" />
+                </CardContent>
+              </Card>
+              <Card className="rounded-lg border shadow-sm">
+                <CardHeader className="border-b bg-white px-6 py-4">
+                  <CardTitle>Top User Locations</CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="h-[300px] rounded-lg bg-gray-50" />
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </main>
+      </div>
     </div>
-  );
+  )
 }
