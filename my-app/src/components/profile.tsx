@@ -106,13 +106,15 @@ export default function IPhoneBanking() {
             <div className="p-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <Avatar className="h-10 w-10">
-                  <AvatarImage src="sova.webp" alt="Profile" />
+                  <AvatarImage src="sage.webp" alt="Profile" />
                   <AvatarFallback>UN</AvatarFallback>
                 </Avatar>
                 <div>
                   <p className="text-xs text-gray-500">Hello,</p>
                   <p className="font-medium">
-                    {customer ? `${customer.first_name} ${customer.last_name}` : "Loading..."}
+                    {customer
+                      ? `${customer.first_name} ${customer.last_name}`
+                      : "Loading..."}
                   </p>
                 </div>
               </div>
@@ -186,7 +188,9 @@ export default function IPhoneBanking() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-medium">-${transaction.amt.toFixed(2)}</p>
+                        <p className="font-medium">
+                          -${transaction.amt.toFixed(2)}
+                        </p>
                         <p className="text-sm text-gray-500">
                           {transaction.trans_date}
                         </p>
@@ -203,19 +207,35 @@ export default function IPhoneBanking() {
           {/* Bottom Navigation */}
           <div className="absolute bottom-0 left-0 right-0 bg-white border-t">
             <div className="flex justify-between items-center p-4">
-              <Button variant="ghost" size="icon" className="flex flex-col items-center">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="flex flex-col items-center"
+              >
                 <Home className="h-5 w-5" />
                 <span className="text-xs mt-1">Home</span>
               </Button>
-              <Button variant="ghost" size="icon" className="flex flex-col items-center">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="flex flex-col items-center"
+              >
                 <Wallet className="h-5 w-5" />
                 <span className="text-xs mt-1">Wallet</span>
               </Button>
-              <Button variant="ghost" size="icon" className="flex flex-col items-center text-primary">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="flex flex-col items-center text-primary"
+              >
                 <User className="h-5 w-5" />
                 <span className="text-xs mt-1">Profile</span>
               </Button>
-              <Button variant="ghost" size="icon" className="flex flex-col items-center">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="flex flex-col items-center"
+              >
                 <Menu className="h-5 w-5" />
                 <span className="text-xs mt-1">More</span>
               </Button>
