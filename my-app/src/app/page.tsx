@@ -68,21 +68,32 @@ const Home = () => {
 
   // Fetch transactions for Lisa Lin using her credit card (cc) number
   useEffect(() => {
-    async function fetchTransactions() {
-      if (!customer) return;
-      const { data, error } = await supabase
-        .from("transaction")
-        .select("*")
-        .eq("cc_num", customer.cc)
-        .order("trans_date", { ascending: false });
-      if (error) {
-        console.error("Error fetching transactions:", error);
-        return;
-      }
-      setTransactions(data || []);
-    }
-    fetchTransactions();
+    if (!customer) return;
+
+    // Create a channel for realtime updates
+    const channel = supabase
+      .channel('transactions-channel')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'transaction',
+          filter: `cc_num=eq.${customer.cc}`,
+        },
+        (payload) => {
+          console.log('New transaction received:', payload.new);
+          setTransactions((prevTransactions) => [payload.new, ...prevTransactions]);
+        }
+      )
+      .subscribe();
+
+    // Cleanup the subscription on unmount
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [customer]);
+
   console.log(customer)
 
 
