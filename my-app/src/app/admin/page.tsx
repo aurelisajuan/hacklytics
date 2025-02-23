@@ -45,7 +45,7 @@ function Sidebar({
   setActiveLink: React.Dispatch<React.SetStateAction<string>>;
 }) {
   return (
-    <aside className="h-full w-60 border-r border-gray-200 bg-white">
+    <aside className="h-full bg-white border-r border-gray-200 w-60">
       {/* Banklytics Branding */}
       <div className="px-6 py-4">
         <div className="flex items-center gap-3">
@@ -62,7 +62,7 @@ function Sidebar({
       </div>
 
       {/* Navigation Links */}
-      <nav className="flex h-full flex-col p-4">
+      <nav className="flex flex-col h-full p-4">
         <Link
           href="/admin"
           onClick={() => setActiveLink("dashboard")}
@@ -72,7 +72,7 @@ function Sidebar({
               : "text-gray-500 hover:bg-[#E5F3FF] hover:text-sky-600"
           }`}
         >
-          <Home className="h-5 w-5" />
+          <Home className="w-5 h-5" />
           Dashboard
         </Link>
 
@@ -85,7 +85,7 @@ function Sidebar({
               : "text-gray-500 hover:bg-[#E5F3FF] hover:text-sky-600"
           }`}
         >
-          <User2 className="h-5 w-5" />
+          <User2 className="w-5 h-5" />
           User Profiles
         </Link>
 
@@ -98,7 +98,7 @@ function Sidebar({
               : "text-gray-500 hover:bg-[#E5F3FF] hover:text-sky-600"
           }`}
         >
-          <Settings className="h-5 w-5" />
+          <Settings className="w-5 h-5" />
           Settings
         </Link>
       </nav>
@@ -146,11 +146,11 @@ export default function Dashboard() {
       <Sidebar activeLink={activeLink} setActiveLink={setActiveLink} />
 
       {/* Main Content Area */}
-      <div className="flex flex-1 flex-col">
+      <div className="flex flex-col flex-1">
         {/* Header */}
-        <header className="flex h-16 items-center border-b border-gray-200 bg-white px-6">
+        <header className="flex items-center h-16 px-6 bg-white border-b border-gray-200">
           <h1 className="text-2xl font-semibold">Dashboard</h1>
-          <div className="ml-auto flex items-center gap-4">
+          <div className="flex items-center gap-4 ml-auto">
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
@@ -161,7 +161,7 @@ export default function Dashboard() {
             </div>
 
             <Button variant="ghost" size="icon" className="relative">
-              <Bell className="h-5 w-5" />
+              <Bell className="w-5 h-5" />
             </Button>
 
             <DropdownMenu>
@@ -188,16 +188,16 @@ export default function Dashboard() {
           <div className="grid gap-6">
             {/* Middle row */}
             <div className="grid gap-6 md:grid-cols-2">
-              <Card className="rounded-lg border shadow-sm">
-                <CardHeader className="border-b bg-white px-6 py-4">
+              <Card className="border rounded-lg shadow-sm">
+                <CardHeader className="px-6 py-4 bg-white border-b">
                   <CardTitle>User Growth Trend</CardTitle>
                 </CardHeader>
                 <CardContent className="p-6">
                   <div className="h-[300px] rounded-lg bg-gray-50" />
                 </CardContent>
               </Card>
-              <Card className="rounded-lg border shadow-sm">
-                <CardHeader className="border-b bg-white px-6 py-4">
+              <Card className="border rounded-lg shadow-sm">
+                <CardHeader className="px-6 py-4 bg-white border-b">
                   <CardTitle>User Activity by Time of Day</CardTitle>
                 </CardHeader>
                 <CardContent className="p-6">
@@ -208,16 +208,16 @@ export default function Dashboard() {
 
             {/* Bottom row */}
             <div className="grid gap-6 md:grid-cols-3">
-              <Card className="rounded-lg border shadow-sm md:col-span-2">
-                <CardHeader className="border-b bg-white px-6 py-4">
+              <Card className="border rounded-lg shadow-sm md:col-span-2">
+                <CardHeader className="px-6 py-4 bg-white border-b">
                   <CardTitle>User Demographics</CardTitle>
                 </CardHeader>
                 <CardContent className="p-6">
                   <div className="h-[300px] rounded-lg bg-gray-50" />
                 </CardContent>
               </Card>
-              <Card className="rounded-lg border shadow-sm">
-                <CardHeader className="border-b bg-white px-6 py-4">
+              <Card className="border rounded-lg shadow-sm">
+                <CardHeader className="px-6 py-4 bg-white border-b">
                   <CardTitle>Top User Locations</CardTitle>
                 </CardHeader>
                 <CardContent className="p-6">
