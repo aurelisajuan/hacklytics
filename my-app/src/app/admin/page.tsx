@@ -52,7 +52,7 @@ type Transaction = {
   trans_date: string;
   trans_time: string;
   amt: number;
-  risk_score: number; // ensure this exists in your database
+  risk_fact: number; // ensure this exists in your database
   merch_lat: number;
   merch_long: number;
   is_fraud: string;
@@ -167,7 +167,7 @@ const LiveRiskTrendLineChart = () => {
     async function fetchRiskTrend() {
       const { data, error } = await supabase
         .from("transaction")
-        .select("trans_date, trans_time, risk_score");
+        .select("trans_date, trans_time, risk_fact");
 
       if (error) {
         // console.error("Error fetching risk trend data:", error);
@@ -176,7 +176,7 @@ const LiveRiskTrendLineChart = () => {
       }
 
       // Combine trans_date and trans_time to form a timestamp label.
-      // Group transactions by this timestamp and compute average risk_score.
+      // Group transactions by this timestamp and compute average risk_fact.
       const trend: { [key: string]: { total: number; count: number } } = {};
 
       data.forEach((tx: any) => {
@@ -184,7 +184,7 @@ const LiveRiskTrendLineChart = () => {
         if (!trend[timestamp]) {
           trend[timestamp] = { total: 0, count: 0 };
         }
-        trend[timestamp].total += tx.risk_score;
+        trend[timestamp].total += tx.risk_fact;
         trend[timestamp].count += 1;
       });
 
@@ -232,7 +232,7 @@ const TransactionVolumeBarChart = () => {
     async function fetchVolume() {
       const { data, error } = await supabase
         .from("transaction")
-        .select("category, risk_score");
+        .select("category, risk_fact");
 
       if (error) {
         // console.error("Error fetching transaction volume:", error);
@@ -240,7 +240,7 @@ const TransactionVolumeBarChart = () => {
         return;
       }
 
-      // Group by category, count transactions and compute average risk_score per category.
+      // Group by category, count transactions and compute average risk_fact per category.
       const volume: {
         [key: string]: { count: number; riskTotal: number };
       } = {};
@@ -251,7 +251,7 @@ const TransactionVolumeBarChart = () => {
           volume[cat] = { count: 0, riskTotal: 0 };
         }
         volume[cat].count += 1;
-        volume[cat].riskTotal += tx.risk_score;
+        volume[cat].riskTotal += tx.risk_fact;
       });
 
       const labels = Object.keys(volume);
@@ -299,7 +299,7 @@ const RiskDistributionHistogram = () => {
     async function fetchRiskDistribution() {
       const { data, error } = await supabase
         .from("transaction")
-        .select("risk_score");
+        .select("risk_fact");
 
       if (error) {
         // console.error("Error fetching risk distribution:", error);
@@ -307,10 +307,10 @@ const RiskDistributionHistogram = () => {
         return;
       }
 
-      // Count the number of risk_score values in each bin.
+      // Count the number of risk_fact values in each bin.
       const distribution = Array(bins.length - 1).fill(0);
       data.forEach((tx: any) => {
-        const score = tx.risk_score;
+        const score = tx.risk_fact;
         for (let i = 0; i < bins.length - 1; i++) {
           if (score >= bins[i] && score < bins[i + 1]) {
             distribution[i]++;
@@ -356,7 +356,7 @@ const RiskGaugeWidget = () => {
     async function fetchRiskGauge() {
       const { data, error } = await supabase
         .from("transaction")
-        .select("risk_score");
+        .select("risk_fact");
 
       if (error) {
         // console.error("Error fetching gauge data:", error);
@@ -367,7 +367,7 @@ const RiskGaugeWidget = () => {
       // Compute total transactions and count high-risk transactions.
       const total = data.length;
       const highRiskCount = data.filter(
-        (tx: any) => tx.risk_score >= riskThreshold
+        (tx: any) => tx.risk_fact >= riskThreshold
       ).length;
       const highRiskPercentage = total ? (highRiskCount / total) * 100 : 0;
 
