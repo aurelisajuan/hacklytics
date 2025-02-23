@@ -1,3 +1,5 @@
 *.csv
+*.wav
+venv
 venv
 *.env
