@@ -92,7 +92,6 @@ def insert_trans(cc_num: str, merchant: str, category: str, amt: float, merch_la
     # )
     # print("Final insert_trans response:", response)
 
-
 def update_transaction(trans_num: str, updated_fields: dict) -> dict:
     """
     Update one or more fields in a transaction row by matching on `trans_num`.
