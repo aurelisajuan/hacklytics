@@ -39,13 +39,6 @@ async def insert_trans(
     try:
         supabase: AsyncClient = await create_async_client(SUPABASE_URL, SUPABASE_KEY)
         print("Checking for customer with cc_num:", cc_num)
-        # customer_query = (
-        #     supabase.table("customer")
-        #     .select("*")
-        #     .eq("cc", cc_num)
-        #     .maybe_single()
-        #     .execute()
-        # )
 
         customer_query = (
             await supabase.table("customer")
@@ -83,15 +76,10 @@ async def insert_trans(
         }
         print("Inserting new transaction:", new_transaction)
 
-        # insert_response = (
-        #     supabase.table("transactions").insert(new_transaction).execute()
-        # )
-
         insert_response = (
             await supabase.table("transaction").insert(new_transaction).execute()
         )
 
-        # response_data = insert_response.get("data")
         if not insert_response.data:
             return {
                 "error": "No data returned from insert. Possibly an error occurred."
@@ -131,12 +119,6 @@ async def update_trans(trans_num: str, updated_fields: dict) -> dict:
             }
     """
     try:
-        # response = (
-        #     supabase.table("transaction")
-        #     .update(updated_fields)
-        #     .eq("trans_num", trans_num)
-        #     .execute()
-        # )
         supabase: AsyncClient = await create_async_client(SUPABASE_URL, SUPABASE_KEY)
         response = (
             await supabase.table("transaction")
