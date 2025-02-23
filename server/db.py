@@ -4,7 +4,6 @@ import csv
 import asyncio
 from datetime import datetime
 from supabase import create_async_client, AsyncClient
-import supabase
 from dotenv import load_dotenv
 
 load_dotenv(override=True)
@@ -40,13 +39,6 @@ async def insert_trans(
     try:
         supabase: AsyncClient = await create_async_client(SUPABASE_URL, SUPABASE_KEY)
         print("Checking for customer with cc_num:", cc_num)
-        # customer_query = (
-        #     supabase.table("customer")
-        #     .select("*")
-        #     .eq("cc", cc_num)
-        #     .maybe_single()
-        #     .execute()
-        # )
 
         customer_query = (
             await supabase.table("customer")
@@ -84,15 +76,10 @@ async def insert_trans(
         }
         print("Inserting new transaction:", new_transaction)
 
-        # insert_response = (
-        #     supabase.table("transactions").insert(new_transaction).execute()
-        # )
-
         insert_response = (
             await supabase.table("transaction").insert(new_transaction).execute()
         )
 
-        # response_data = insert_response.get("data")
         if not insert_response.data:
             return {
                 "error": "No data returned from insert. Possibly an error occurred."
@@ -132,12 +119,6 @@ async def update_trans(trans_num: str, updated_fields: dict) -> dict:
             }
     """
     try:
-        # response = (
-        #     supabase.table("transaction")
-        #     .update(updated_fields)
-        #     .eq("trans_num", trans_num)
-        #     .execute()
-        # )
         supabase: AsyncClient = await create_async_client(SUPABASE_URL, SUPABASE_KEY)
         response = (
             await supabase.table("transaction")
@@ -214,6 +195,7 @@ async def set_locked(cc: str, is_locked: str):
             }
     """
     valid_states = {"no", "yes", "pending high", "pending low"}
+    print("BALLS ")
     if is_locked not in valid_states:
         error_message = (
             f"Invalid state for is_locked: {is_locked}. Must be one of {valid_states}"
@@ -246,6 +228,7 @@ async def set_locked(cc: str, is_locked: str):
         return {"error": error_message}
 
 
+
 async def reset_db() -> dict:
     """
     Reset the database by clearing the 'transactions' table
@@ -271,7 +254,7 @@ async def reset_db() -> dict:
         # Load data from base.csv
         print("Loading data from base.csv...")
         with open(
-            "./sample_data/base.csv", mode="r", newline=""
+            "./experiments/sample_data/base.csv", mode="r", newline=""
         ) as csvfile:
             reader = csv.DictReader(csvfile)
             # Print CSV schema (the header field names)
