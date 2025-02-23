@@ -1,115 +1,95 @@
-import pandas as pd
 import numpy as np
-import tensorflow as tf
+import pandas as pd
+from datetime import datetime
+from math import radians, cos, sin, asin, sqrt
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense, Masking
 from tensorflow.keras.preprocessing.sequence import pad_sequences
-from sklearn.preprocessing import LabelEncoder, StandardScaler
+import pickle
 
-# Ensure TensorFlow 2.18.0 is being used
-print("TensorFlow version:", tf.__version__)
+# Function to calculate haversine distance between two lat-long points
+def haversine(lat1, lon1, lat2, lon2):
+    # Convert decimal degrees to radians 
+    lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
+    dlon = lon2 - lon1 
+    dlat = lat2 - lat1 
+    a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+    c = 2 * asin(sqrt(a)) 
+    r = 6371  # Radius of earth in kilometers.
+    return c * r
 
-###############################
-# 1. Load and Preprocess Data #
-###############################
+# Load dataset
+df = pd.read_csv('fraudTrain.csv')
 
-# Load training and test CSV files
-train_df = pd.read_csv('fraudTrain.csv', index_col=0, parse_dates=['trans_date_trans_time'])
-test_df = pd.read_csv('fraudTest.csv', index_col=0, parse_dates=['trans_date_trans_time'])
+# Convert transaction time to datetime and sort the data
+df['trans_date_trans_time'] = pd.to_datetime(df['trans_date_trans_time'])
+df.sort_values(['cc_num', 'trans_date_trans_time'], inplace=True)
 
-# Sort by transaction date
-train_df.sort_values('trans_date_trans_time', inplace=True)
-test_df.sort_values('trans_date_trans_time', inplace=True)
+# Compute the distance feature
+df['distance'] = df.apply(lambda row: haversine(row['lat'], row['long'], row['merch_lat'], row['merch_long']), axis=1)
 
-# Extract transaction hour
-train_df['trans_hour'] = train_df['trans_date_trans_time'].dt.hour
-test_df['trans_hour'] = test_df['trans_date_trans_time'].dt.hour
+# Compute time difference between transactions for each user
+df['time_diff'] = df.groupby('cc_num')['trans_date_trans_time'].diff().dt.total_seconds().fillna(0)
 
-# Encode categorical features: merchant and category
-# Fit encoders on the training set and use them for the test set
-merchant_le = LabelEncoder()
-train_df['merchant_enc'] = merchant_le.fit_transform(train_df['merchant'])
-test_df['merchant_enc'] = merchant_le.transform(test_df['merchant'])
+# Select features and label for simplicity
+features = ['amt', 'distance', 'time_diff']
+# 'is_fraud' is assumed to be 0 or 1 indicating non-fraudulent or fraudulent transactions respectively.
 
-category_le = LabelEncoder()
-train_df['category_enc'] = category_le.fit_transform(train_df['category'])
-test_df['category_enc'] = category_le.transform(test_df['category'])
-
-# Compute Euclidean distance between card holder and merchant
-def compute_distance(row):
-    card_holder = np.array([row['lat'], row['long']])
-    merchant_loc = np.array([row['merch_lat'], row['merch_long']])
-    return np.linalg.norm(card_holder - merchant_loc)
-
-train_df['distance'] = train_df.apply(compute_distance, axis=1)
-test_df['distance'] = test_df.apply(compute_distance, axis=1)
-
-###############################################
-# 2. Group Transactions into Sequences by cc_num
-###############################################
-
-# Define the feature columns to be used in the sequence.
-feature_cols = ['amt', 'trans_hour', 'merchant_enc', 'category_enc', 'distance']
-
-def create_sequences(df, feature_cols):
-    sequences = []
-    labels = []
-    # Group by cc_num to create transaction sequences for each card
-    for cc, group in df.groupby('cc_num'):
-        group = group.sort_values('trans_date_trans_time')
-        seq = group[feature_cols].values
-        sequences.append(seq)
-        # Use the fraud label (is_fraud) of the last transaction in the sequence as the target.
-        labels.append(group['is_fraud'].iloc[-1])
-    return sequences, np.array(labels)
-
-train_sequences, y_train = create_sequences(train_df, feature_cols)
-test_sequences, y_test = create_sequences(test_df, feature_cols)
-
-#############################################
-# 3. Pad Sequences and Scale Numerical Data
-#############################################
-
-# Determine the maximum sequence length across both training and test sets.
-max_seq_train = max(len(seq) for seq in train_sequences)
-max_seq_test = max(len(seq) for seq in test_sequences)
-max_seq_length = max(max_seq_train, max_seq_test)
-
-# Pad sequences so that each has the same length.
-X_train = pad_sequences(train_sequences, maxlen=max_seq_length, dtype='float32',
-                         padding='post', truncating='post')
-X_test = pad_sequences(test_sequences, maxlen=max_seq_length, dtype='float32',
-                        padding='post', truncating='post')
-
-# Scale numerical features: fit scaler on training data then apply to both train and test.
-num_samples_train, seq_length, num_features = X_train.shape
-X_train_reshaped = X_train.reshape(-1, num_features)
-
+# Optionally, you can scale features here if you plan on using them directly
 scaler = StandardScaler()
-X_train_scaled = scaler.fit_transform(X_train_reshaped).reshape(num_samples_train, seq_length, num_features)
+df[features] = scaler.fit_transform(df[features])
+with open('scaler.pkl', 'wb') as f:
+    pickle.dump(scaler, f)
 
-num_samples_test = X_test.shape[0]
-X_test_reshaped = X_test.reshape(-1, num_features)
-X_test_scaled = scaler.transform(X_test_reshaped).reshape(num_samples_test, seq_length, num_features)
+# Build sequences: group transactions by user
+user_sequences = []
+user_labels = []
+for user, group in df.groupby('cc_num'):
+    seq = group[features].values
+    # For instance, use the last transaction's label as the label for the sequence
+    label = group['is_fraud'].values[-1]
+    user_sequences.append(seq)
+    user_labels.append(label)
 
-#################################
-# 4. Build and Train the RNN Model
-#################################
+# Determine maximum sequence length and pad sequences so they are uniform in length
+max_seq_len = max(len(seq) for seq in user_sequences)
+X_seq = pad_sequences(user_sequences, maxlen=max_seq_len, dtype='float32', padding='pre')
+y_seq = np.array(user_labels)
 
-# Build an RNN model with a Masking layer, an LSTM layer, and a final Dense layer with sigmoid activation.
+# Split into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X_seq, y_seq, test_size=0.2, random_state=42)
+
+# Build the RNN model
 model = Sequential()
-model.add(Masking(mask_value=0.0, input_shape=(max_seq_length, num_features)))
-model.add(LSTM(64, return_sequences=False))
-model.add(Dense(1, activation='sigmoid'))  # Outputs risk factor (0-1)
+model.add(Masking(mask_value=0., input_shape=(max_seq_len, len(features))))
+model.add(LSTM(64))
+model.add(Dense(1, activation='sigmoid'))
 
 model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
-model.summary()
 
-# Train the model using the training data.
-model.fit(X_train_scaled, y_train, epochs=10, batch_size=32, validation_split=0.1)
+# Train the model
+model.fit(X_train, y_train, epochs=10, batch_size=32, validation_split=0.2)
+model.save('fraud_detection_model.h5')
 
-# Evaluate the model on the test data.
-loss, accuracy = model.evaluate(X_test_scaled, y_test)
-print("Test accuracy:", accuracy)
+# Define a function to predict fraud for a new transaction given a user's transaction history
+def predict_fraud(user_transactions, new_transaction):
+    """
+    user_transactions: List of past transactions (each as a list of features: [amt, distance, time_diff])
+    new_transaction: A single transaction represented as [amt, distance, time_diff]
+    """
+    # Create updated sequence by appending the new transaction
+    seq = np.array(user_transactions + [new_transaction])
+    # Scale the sequence using the same scaler (if not already scaled)
+    seq = scaler.transform(seq)
+    # Pad the sequence to max_seq_len
+    seq = pad_sequences([seq], maxlen=max_seq_len, dtype='float32', padding='pre')
+    # Predict fraud probability
+    prob = model.predict(seq)
+    return prob[0][0]
 
-model.save('fraud_model.h5')
+# Example usage:
+# past_transactions = [[scaled_amt1, scaled_distance1, scaled_time_diff1], ...]
+# new_transaction = [raw_amt, raw_distance, raw_time_diff] then scaled using 'scaler'
+# fraud_prob = predict_fraud(past_transactions, new_transaction)
