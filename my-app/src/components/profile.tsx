@@ -130,9 +130,9 @@ export default function Profile({ customer, transactions }: ProfileProps) {
               </div>
               <div className="space-y-4">
                 {transactions.length > 0 ? (
-                  transactions.map((transaction) => (
+                  transactions.map((transaction, index) => (
                     <div
-                      key={transaction.trans_num}
+                      key={index}
                       className="flex items-center justify-between"
                     >
                       <div className="flex items-center gap-3">

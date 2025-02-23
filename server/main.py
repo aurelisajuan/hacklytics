@@ -13,8 +13,16 @@ from custom_types import (
 from llm import LlmClient
 from supabase import create_client, Client
 from model import simulate_transaction
-
+import pickle
+import face_recognition
+import base64
+import io
+from PIL import Image
+import numpy as np
 from db import reset_db, insert_trans, update_trans, get_cust, set_locked
+import base64
+import io
+from pydub import AudioSegment
 
 load_dotenv(override=True)
 app = FastAPI()
@@ -31,9 +39,44 @@ app.add_middleware(
 )
 
 retell = Retell(api_key=os.environ["RETELL_API_KEY"])
-SUPABASE_URL = os.getenv("SUPABASE_URL", "https://default.supabase.co")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY", "defaultSupabaseKey")
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+known_encodings = pickle.load(open("known_encodings.pkl", "rb"))
+
+
+@app.post("/upload-image")
+async def upload_image(request: Request):
+    try:
+        data = await request.json()
+        image_url = data.get("image_url")
+        cc_num = data.get("cc_num")
+        if not image_url or not cc_num:
+            return JSONResponse(
+                status_code=400,
+                content={"error": "Image URL and transaction ID are required"},
+            )
+
+        decoded_data = base64.b64decode(image_url)
+        unknown_image = Image.open(io.BytesIO(decoded_data))
+        unknown_image_np = np.array(unknown_image)
+
+        # Get the face encoding of the unknown image
+        unknown_encoding = face_recognition.face_encodings(unknown_image_np)[0]
+
+        # Compare the unknown face encoding with the known faces encodings
+        distances = face_recognition.face_distance(known_encodings, unknown_encoding)
+
+        if distances.mean() < 0.4:
+            await update_trans(cc_num, {"is_fraud": "no"})
+            # Match found
+            return JSONResponse(
+                status_code=200, content={"success": "Image uploaded successfully"}
+            )
+        else:
+            return JSONResponse(status_code=400, content={"error": "No match found"})
+
+    except Exception as e:
+        return JSONResponse(
+            status_code=500, content={"error": f"Failed to upload image: {str(e)}"}
+        )
 
 
 @app.post("/insert-transaction")
@@ -232,6 +275,44 @@ async def websocket_handler(websocket: WebSocket, call_id: str):
         await websocket.close(1011, "Server error")
     finally:
         print(f"LLM WebSocket connection closed for {call_id}")
+
+
+@app.post("/audio")
+async def process_audio(request: Request):
+    try:
+        # Get the audio file from the request
+        form = await request.form()
+        audio_file = form.get("audio")
+        
+        if not audio_file:
+            return JSONResponse(
+                status_code=400,
+                content={"error": "No audio file provided"}
+            )
+
+        # Read the contents of the uploaded file
+        audio_data = await audio_file.read()
+        
+        # Use an in-memory bytes buffer
+        audio_io = io.BytesIO(audio_data)
+
+        # Load the audio using pydub
+        audio_segment = AudioSegment.from_wav(audio_io)
+
+        # Export the audio as a WAV file
+        audio_segment.export("output.wav", format="wav")
+        
+        return JSONResponse(
+            status_code=200,
+            content={"message": "Audio file processed successfully"}
+        )
+
+    except Exception as e:
+        print(f"Error in process_audio: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Error processing audio: {str(e)}"}
+        )
 
 
 @app.delete("/reset")
