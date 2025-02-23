@@ -44,7 +44,13 @@ async def insert_trans(
         #     .execute()
         # )
 
-        customer_query = await supabase.table("customer").select("*").eq("cc", cc_num).maybe_single().execute()
+        customer_query = (
+            await supabase.table("customer")
+            .select("*")
+            .eq("cc", cc_num)
+            .maybe_single()
+            .execute()
+        )
 
         print("Customer query response:", customer_query)
         customer = customer_query.data
@@ -78,7 +84,9 @@ async def insert_trans(
         #     supabase.table("transactions").insert(new_transaction).execute()
         # )
 
-        insert_response = await supabase.table("transactions").insert(new_transaction).execute()
+        insert_response = (
+            await supabase.table("transactions").insert(new_transaction).execute()
+        )
 
         response_data = insert_response.get("data")
         if not response_data:
@@ -142,7 +150,12 @@ async def update_trans(trans_num: str, updated_fields: dict) -> dict:
         #     .eq("trans_num", trans_num)
         #     .execute()
         # )
-        response = await supabase.table("transaction").update(updated_fields).eq("trans_num", trans_num).execute()
+        response = (
+            await supabase.table("transaction")
+            .update(updated_fields)
+            .eq("trans_num", trans_num)
+            .execute()
+        )
 
         # updated_rows = response.get("data", [])
         updated_rows = response.data or []
@@ -163,12 +176,8 @@ async def update_trans(trans_num: str, updated_fields: dict) -> dict:
 
 # print("Update result:", result)
 
-<<<<<<< HEAD
 
-def get_cust(cc_num: str) -> dict:
-=======
-async def get_customer(cc_num: str):
->>>>>>> 7cebbe8d12778220b5dd3f66d8e6a82308b3482e
+async def get_cust(cc_num: str):
     """
     Retrieves customer details from the Supabase database.
 
@@ -181,7 +190,13 @@ async def get_customer(cc_num: str):
     try:
         # Query the customer table to get customer details
         # customer_query = supabase.table("customer").select("*").eq("cc", cc_num).maybe_single().execute()
-        customer_query = await supabase.table("customer").select("*").eq("cc", cc_num).maybe_single().execute()
+        customer_query = (
+            await supabase.table("customer")
+            .select("*")
+            .eq("cc", cc_num)
+            .maybe_single()
+            .execute()
+        )
 
         customer = customer_query.data
 
@@ -196,10 +211,12 @@ async def get_customer(cc_num: str):
         print(f"Unexpected error while retrieving customer: {e}")
         return {"error": "Internal server error", "details": str(e)}
 
+
 # result = get_cust("3502088871723054")
 # print("Get customer result:", result)
 
-async def set_locked(cc_num: str, is_locked: bool):
+
+async def set_locked(cc: str, is_locked: bool):
     """
     Set the locked status for a customer in the database.
 
@@ -210,13 +227,8 @@ async def set_locked(cc_num: str, is_locked: bool):
     Returns:
         dict: Outcome of the update operation, e.g.,
             {
-<<<<<<< HEAD
-                "success": "Found customer.",
-                "data": { ...customer row... }
-=======
                 "success": "Updated locked status for customer with cc 1234.",
                 "data": [ { ...updated customer row... } ]
->>>>>>> 7cebbe8d12778220b5dd3f66d8e6a82308b3482e
             }
             or
             {
@@ -224,39 +236,24 @@ async def set_locked(cc_num: str, is_locked: bool):
             }
     """
     try:
-<<<<<<< HEAD
         response = (
-            supabase.table("customer").select("*").eq("cc", cc_num).limit(1).execute()
+            await supabase.table("customer")
+            .update({"is_locked": is_locked})
+            .eq("cc", cc)
+            .execute()
         )
-
-        customer = response.data[0] if response.data else None
-
-        if not customer:
-            return {"error": f"No customer found with credit card number: {cc_num}"}
-
-        return {"success": "Found customer.", "data": customer}
-
-    except Exception as e:
-        return {"error": f"Exception while getting customer by cc_num {cc_num}: {e}"}
-
-
-# result = get_cust("3502088871723054")
-# print("Get customer result:", result)
-=======
-        response = await supabase.table("customer").update({"locked": is_locked}).eq("cc", cc_num).execute()
         updated_rows = response.data or []
 
         if not updated_rows:
-            error_message = f"No customer found with cc {cc_num} to update."
+            error_message = f"No customer found with cc {cc} to update."
             print(error_message)
             return {"error": error_message}
 
-        success_message = f"Updated locked status for customer with cc {cc_num}."
+        success_message = f"Updated locked status for customer with cc {cc}."
         print(success_message)
         return {"success": success_message, "data": updated_rows}
 
     except Exception as e:
-        error_message = f"Exception while setting locked status for cc {cc_num}: {e}"
+        error_message = f"Exception while setting locked status for cc {cc}: {e}"
         print(error_message)
         return {"error": error_message}
->>>>>>> 7cebbe8d12778220b5dd3f66d8e6a82308b3482e

@@ -18,7 +18,7 @@ from llm import LlmClient
 from supabase import create_client, Client
 from datetime import datetime
 
-from db import insert_trans, update_trans, get_cust
+from db import insert_trans, set_locked, get_cust
 
 load_dotenv(override=True)
 app = FastAPI()
@@ -53,7 +53,7 @@ async def get_transaction(request: Request):
             # No fraud detected
 
             # Here insert transaction into db with fraud false
-            insert_trans(
+            await insert_trans(
                 data.get("cc_num"),
                 data.get("merchant"),
                 data.get("category"),
@@ -71,7 +71,7 @@ async def get_transaction(request: Request):
             # Low Fraud
 
             # Here insert transaction into db with fraud pending
-            data = insert_trans(
+            data = await insert_trans(
                 data.get("cc_num"),
                 data.get("merchant"),
                 data.get("category"),
@@ -81,8 +81,11 @@ async def get_transaction(request: Request):
                 "pending",
             )
 
-            customer = get_cust(data.get("cc_num"))
+            customer = await get_cust(data.get("cc_num"))
             transaction_details = data.get("data")
+
+            # Set user locked status to false
+            await set_locked(data.get("cc_num"), True)
 
             retell.call.create_phone_call(
                 from_number="+13192504307",
@@ -103,7 +106,7 @@ async def get_transaction(request: Request):
             # High Fraud
 
             # Here insert transaaction into db with fraud pending
-            insert_trans(
+            await insert_trans(
                 data.get("cc_num"),
                 data.get("merchant"),
                 data.get("category"),
@@ -113,8 +116,11 @@ async def get_transaction(request: Request):
                 "pending",
             )
 
-            customer = get_cust(data.get("cc_num"))
+            customer = await get_cust(data.get("cc_num"))
             transaction_details = data.get("data")
+
+            # Set user locked status to true
+            await set_locked(data.get("cc_num"), True)
 
             retell.call.create_phone_call(
                 from_number="+13192504307",
