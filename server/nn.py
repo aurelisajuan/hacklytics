@@ -9,32 +9,32 @@ from tensorflow.keras.layers import LSTM, Dense, Masking
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 import pickle
 
-# Function to calculate haversine distance between two lat-long points
-def haversine(lat1, lon1, lat2, lon2):
-    # Convert decimal degrees to radians 
-    lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
-    dlon = lon2 - lon1 
-    dlat = lat2 - lat1 
-    a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
-    c = 2 * asin(sqrt(a)) 
-    r = 6371  # Radius of earth in kilometers.
-    return c * r
+# # Function to calculate haversine distance between two lat-long points
+# def haversine(lat1, lon1, lat2, lon2):
+#     # Convert decimal degrees to radians 
+#     lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
+#     dlon = lon2 - lon1 
+#     dlat = lat2 - lat1 
+#     a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+#     c = 2 * asin(sqrt(a)) 
+#     r = 6371  # Radius of earth in kilometers.
+#     return c * r
 
 # Load dataset
 df = pd.read_csv('fraudTrain.csv')
 
 # Convert transaction time to datetime and sort the data
-df['trans_date_trans_time'] = pd.to_datetime(df['trans_date_trans_time'])
+# df['trans_date_trans_time'] = pd.to_datetime(df['trans_date_trans_time'])
 df.sort_values(['cc_num', 'trans_date_trans_time'], inplace=True)
 
 # Compute the distance feature
-df['distance'] = df.apply(lambda row: haversine(row['lat'], row['long'], row['merch_lat'], row['merch_long']), axis=1)
+# df['distance'] = df.apply(lambda row: haversine(row['lat'], row['long'], row['merch_lat'], row['merch_long']), axis=1)
 
 # Compute time difference between transactions for each user
-df['time_diff'] = df.groupby('cc_num')['trans_date_trans_time'].diff().dt.total_seconds().fillna(0)
+# df['time_diff'] = df.groupby('cc_num')['trans_date_trans_time'].diff().dt.total_seconds().fillna(0)
 
 # Select features and label for simplicity
-features = ['amt', 'distance', 'time_diff']
+features = ['amt']
 # 'is_fraud' is assumed to be 0 or 1 indicating non-fraudulent or fraudulent transactions respectively.
 
 # Optionally, you can scale features here if you plan on using them directly
