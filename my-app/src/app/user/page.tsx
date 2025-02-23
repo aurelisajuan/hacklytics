@@ -29,7 +29,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { createClient } from "@supabase/supabase-js";
 import AudioRecorder from "@/components/audio";
 
-// Define the Customer interface
 interface Customer {
   id?: string;
   first_name: string;
@@ -47,7 +46,6 @@ interface Customer {
   is_locked: string;
 }
 
-// Define the Transaction interface
 interface Transaction {
   merchant: string;
   category: string;
@@ -57,7 +55,7 @@ interface Transaction {
   amt: number;
   merch_lat: number;
   merch_long: number;
-  is_fraud: string; // Expected to be a numeric string representing the fraud score (0 to 1)
+  is_fraud: string; // numeric string (0 to 1)
   cc_num: string;
   user_id: string;
 }
@@ -66,14 +64,12 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Helper function to classify fraud risk based on score
 function getFraudRisk(score: number): string {
   if (score < 0.5) return "No Fraud";
   if (score < 0.7) return "Low Fraud";
   return "High Fraud";
 }
 
-// Sidebar Component: Combines Banklytics branding and navigation
 function Sidebar({
   activeLink,
   setActiveLink,
@@ -86,7 +82,6 @@ function Sidebar({
       {/* Banklytics Branding */}
       <div className="px-6 py-4">
         <div className="flex items-center gap-3">
-          {/* Logo Image */}
           <Image
             src="/logo.png"
             alt="Banklytics Logo"
@@ -141,7 +136,6 @@ function Sidebar({
 }
 
 export default function DashboardPage() {
-  // Initialize active link as "user-profiles" so the User Profiles nav item is highlighted on page load.
   const [activeLink, setActiveLink] = useState("user-profiles");
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [recentTransaction, setRecentTransaction] = useState<Transaction | null>(null);
@@ -181,54 +175,41 @@ export default function DashboardPage() {
     setRecentTransaction(data);
   }
 
-  // Initially fetch transaction when customer data is available
+  // Re-fetch transaction data when customer info is available
   useEffect(() => {
     if (customer) {
       fetchTransaction();
     }
   }, [customer]);
 
-  // Handler for reset button click
-  // async function handleReset() {
-  //   // Call the backend function reset_db via Supabase RPC
-  //   const { error } = await supabase.rpc("reset_db");
-  //   if (error) {
-  //     console.error("Error resetting database:", error);
-  //     return;
-  //   }
-  //   // After resetting, re-fetch the latest transaction for Lisa Lin
-  //   await fetchTransaction();
-  // }
-
-async function handleReset() {
-  try {
-    // Call your Python backend API route that triggers reset_db
-    const pythonBackendUrl = process.env.PYTHON_BACKEND_URL;
-    if (!pythonBackendUrl) {
-      console.error("Python backend URL is not configured.");
+  async function handleReset() {
+    try {
+      // Call your Next.js API route that proxies the request to your Python backend
+      const response = await fetch("/api/reset", {
+        method: "DELETE",
+      });
+  
+      const contentType = response.headers.get("content-type");
+      let result;
+      if (contentType && contentType.includes("application/json")) {
+        result = await response.json();
+      } else {
+        result = { message: "Non-JSON response", data: await response.text() };
+      }
+  
+      if (!response.ok) {
+        console.error("Reset failed:", result.error || result.message || result);
+        return;
+      }
+  
+      console.log("Reset succeeded:", result.success || result.message);
+      // After resetting, re-fetch the latest transaction for Lisa Lin
+      await fetchTransaction();
+    } catch (error) {
+      console.error("Error calling the reset API route:", error);
     }
-
-    // Make a DELETE request to your Python backend's reset endpoint
-    const response = await fetch(`${pythonBackendUrl}/reset`, {
-    method: "DELETE",
-    });
-
-    const result = await response.json();
-
-
-    if (!response.ok) {
-      console.error("Reset failed:", result.error);
-      return;
-    }
-
-    console.log("Reset succeeded:", result.success);
-    // After resetting, re-fetch the latest transaction for Lisa Lin
-    await fetchTransaction();
-  } catch (error) {
-    console.error("Error calling the reset API route:", error);
   }
-}
-
+  
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
@@ -316,24 +297,15 @@ async function handleReset() {
                     <span className="mr-1.5 h-2 w-2 rounded-full bg-gray-500" />
                     Reset
                   </Button>
-                  <Button
-                    variant="outline"
-                    className="text-blue-500 border-blue-500 rounded-full"
-                  >
+                  <Button variant="outline" className="text-blue-500 border-blue-500 rounded-full">
                     <span className="mr-1.5 h-2 w-2 rounded-full bg-blue-500" />
                     No Fraud
                   </Button>
-                  <Button
-                    variant="outline"
-                    className="text-orange-500 border-orange-500 rounded-full"
-                  >
+                  <Button variant="outline" className="text-orange-500 border-orange-500 rounded-full">
                     <span className="mr-1.5 h-2 w-2 rounded-full bg-orange-500" />
                     Low Fraud
                   </Button>
-                  <Button
-                    variant="outline"
-                    className="text-red-500 border-red-500 rounded-full"
-                  >
+                  <Button variant="outline" className="text-red-500 border-red-500 rounded-full">
                     <span className="mr-1.5 h-2 w-2 rounded-full bg-red-500" />
                     High Fraud
                   </Button>
@@ -345,13 +317,23 @@ async function handleReset() {
                   </CardHeader>
                   <CardContent>
                     <div className="grid gap-6 md:grid-cols-2">
-                      <div className="aspect-video w-80 rounded-xl bg-gradient-to-br from-gray-200 to-gray-300" />
+                      {/* <div className="aspect-video w-80 rounded-xl bg-gradient-to-br from-gray-200 to-gray-300" /> */}
+                      <div className="px-4 mb-6">
+                        <Card className="bg-zinc-900 text-white">
+                          <CardContent className="p-6">
+                            <div className="flex justify-between items-start mb-6">
+                              <img src="/visa.webp" alt="Visa" className="h-8" />
+                            </div>
+                            <div className="space-y-1">
+                              <p className="text-gray-400">Bank of Hacklytics</p>
+                              <p className="font-mono">4512 •••• •••• 1773</p>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
                       <div>
-                        {/* Card Status aligned to the right */}
                         <div className="mb-4 text-right">
-                          <span className="text-sm text-muted-foreground">
-                            Card Status:{" "}
-                          </span>
+                          <span className="text-sm text-muted-foreground">Card Status: </span>
                           <span className="flex items-center justify-end gap-2 font-bold">
                             {customer ? (
                               customer.is_locked.toLowerCase() === "true" ? (
