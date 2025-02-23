@@ -10,7 +10,7 @@ SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-def insert_trans(cc_num: str, merchant: str, category: str, amt: float, merch_lat: float, merch_long: float):
+def insert_trans(cc_num: str, merchant: str, category: str, amt: float, merch_lat: float, merch_long: float, is_Fraud: str):
     """
     Insert a transaction into the database.
 
@@ -50,15 +50,13 @@ def insert_trans(cc_num: str, merchant: str, category: str, amt: float, merch_la
             "amt": amt,
             "merch_lat": merch_lat,
             "merch_long": merch_long,
-            "is_fraud": "no",
+            "is_fraud": is_Fraud,
             "cc_num": cc_num,
             "user_id": user_id,
         }
         print("Inserting new transaction:", new_transaction)
 
         insert_response = supabase.table("transactions").insert(new_transaction).execute()
-
-        print("Insert response:", insert_response)
 
         response_data = insert_response.get("data")
         if not response_data:
