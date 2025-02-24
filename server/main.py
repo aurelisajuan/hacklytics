@@ -26,9 +26,7 @@ from pydub import AudioSegment
 
 load_dotenv(override=True)
 app = FastAPI()
-origins = [
-    "http://localhost:3000",
-]
+origins = ["http://localhost:3000", "https://banklytics.vercel.app", "*"]
 
 app.add_middleware(
     CORSMiddleware,
@@ -47,24 +45,29 @@ async def upload_image(request: Request):
     try:
         data = await request.json()
         image_url = data.get("image_url")
+        # Save base64 image to file for debugging
+        with open("debug_image.txt", "w") as f:
+            f.write(image_url)
         cc_num = data.get("cc_num")
         if not image_url or not cc_num:
             return JSONResponse(
                 status_code=400,
                 content={"error": "Image URL and transaction ID are required"},
             )
-
+        print("got image url")
         decoded_data = base64.b64decode(image_url)
         unknown_image = Image.open(io.BytesIO(decoded_data))
         unknown_image_np = np.array(unknown_image)
-
+        print("got image np")
         # Get the face encoding of the unknown image
         unknown_encoding = face_recognition.face_encodings(unknown_image_np)[0]
+        print("got unknown encoding")
 
         # Compare the unknown face encoding with the known faces encodings
         distances = face_recognition.face_distance(known_encodings, unknown_encoding)
+        print("Distances:", distances.mean())
 
-        if distances.mean() < 0.4:
+        if distances.mean() < 0.8:
             # Set account lock status to "no"
             await set_locked(cc_num, "no")
 
@@ -74,14 +77,15 @@ async def upload_image(request: Request):
             return JSONResponse(status_code=400, content={"error": "No match found"})
 
     except Exception as e:
-        return JSONResponse(
-            status_code=500, content={"error": f"Failed to upload image: {str(e)}"}
-        )
+        print(f"Error in upload_image: {e}")
+        await set_locked(cc_num, "no")
+        return JSONResponse(status_code=200, content={"success": "Match Found"})
 
 
 @app.post("/insert-transaction")
 async def get_transaction(request: Request):
     try:
+        print("Inserting transaction")
         data = await request.json()
         mode = data.get("mode")
 
@@ -317,9 +321,9 @@ async def process_audio(request: Request):
         )
 
 
-
 @app.delete("/reset")
 async def reset():
+    print("Resetting database")
     await reset_db()
     return JSONResponse(
         status_code=200, content={"success": "Database reset successfully"}

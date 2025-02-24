@@ -81,9 +81,6 @@ export default function AudioRecorder() {
     }
   }
 
-  const simulateAudioMatching = async (b64: string | null) => {
-    setMatchStatus("success");
-  }
 
   const drawWaveform = (data: Float32Array, progress = 0) => {
     if (!canvasRef.current) return
@@ -291,11 +288,10 @@ export default function AudioRecorder() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 50 }}
             transition={{ duration: 0.5 }}
-            className={`w-64 h-64 rounded-2xl shadow-lg flex flex-col items-center justify-center space-y-4 ${
-              matchStatus === "success"
+            className={`w-64 h-64 rounded-2xl shadow-lg flex flex-col items-center justify-center space-y-4 ${matchStatus === "success"
                 ? "bg-gradient-to-br from-green-400 to-blue-500"
                 : "bg-gradient-to-br from-red-400 to-pink-500"
-            }`}
+              }`}
           >
             <motion.div
               initial={{ scale: 0 }}
