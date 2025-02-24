@@ -95,10 +95,11 @@ function Sidebar({
         <Link
           href="/admin"
           onClick={() => setActiveLink("dashboard")}
-          className={`mb-1 flex items-center gap-2 rounded-lg px-4 py-2 ${activeLink === "dashboard"
-            ? "bg-[#E5F3FF] text-sky-600"
-            : "text-gray-500 hover:bg-[#E5F3FF] hover:text-sky-600"
-            }`}
+          className={`mb-1 flex items-center gap-2 rounded-lg px-4 py-2 ${
+            activeLink === "dashboard"
+              ? "bg-[#E5F3FF] text-sky-600"
+              : "text-gray-500 hover:bg-[#E5F3FF] hover:text-sky-600"
+          }`}
         >
           <HomeIcon className="w-5 h-5" />
           Dashboard
@@ -106,10 +107,11 @@ function Sidebar({
         <Link
           href="/user"
           onClick={() => setActiveLink("user-profiles")}
-          className={`mb-1 flex items-center gap-2 rounded-lg px-4 py-2 ${activeLink === "user-profiles"
-            ? "bg-[#E5F3FF] text-sky-600"
-            : "text-gray-500 hover:bg-[#E5F3FF] hover:text-sky-600"
-            }`}
+          className={`mb-1 flex items-center gap-2 rounded-lg px-4 py-2 ${
+            activeLink === "user-profiles"
+              ? "bg-[#E5F3FF] text-sky-600"
+              : "text-gray-500 hover:bg-[#E5F3FF] hover:text-sky-600"
+          }`}
         >
           <UserCircle className="w-5 h-5" />
           User Profiles
@@ -117,10 +119,11 @@ function Sidebar({
         <Link
           href="#"
           onClick={() => setActiveLink("settings")}
-          className={`flex items-center gap-2 rounded-lg px-4 py-2 ${activeLink === "settings"
-            ? "bg-[#E5F3FF] text-sky-600"
-            : "text-gray-500 hover:bg-[#E5F3FF] hover:text-sky-600"
-            }`}
+          className={`flex items-center gap-2 rounded-lg px-4 py-2 ${
+            activeLink === "settings"
+              ? "bg-[#E5F3FF] text-sky-600"
+              : "text-gray-500 hover:bg-[#E5F3FF] hover:text-sky-600"
+          }`}
         >
           <Settings className="w-5 h-5" />
           Settings
@@ -133,7 +136,8 @@ function Sidebar({
 export default function DashboardPage() {
   const [activeLink, setActiveLink] = useState("user-profiles");
   const [customer, setCustomer] = useState<Customer | null>(null);
-  const [recentTransaction, setRecentTransaction] = useState<Transaction | null>(null);
+  const [recentTransaction, setRecentTransaction] =
+    useState<Transaction | null>(null);
 
   // Fetch the customer record for Lisa Lin
   useEffect(() => {
@@ -180,9 +184,12 @@ export default function DashboardPage() {
   async function handleReset() {
     try {
       // Call your Next.js API route that proxies the request to your Python backend
-      const response = await fetch("https://fitting-correctly-lioness.ngrok-free.app/reset", {
-        method: "DELETE",
-      });
+      const response = await fetch(
+        "https://fitting-correctly-lioness.ngrok-free.app/reset",
+        {
+          method: "DELETE",
+        }
+      );
 
       const contentType = response.headers.get("content-type");
       let result;
@@ -193,7 +200,10 @@ export default function DashboardPage() {
       }
 
       if (!response.ok) {
-        console.error("Reset failed:", result.error || result.message || result);
+        console.error(
+          "Reset failed:",
+          result.error || result.message || result
+        );
         return;
       }
 
@@ -205,6 +215,35 @@ export default function DashboardPage() {
     }
   }
 
+  function handleClick(mode: string) {
+    // Call your Next.js API route that proxies the request to your Python backend
+    fetch(
+      "https://fitting-correctly-lioness.ngrok-free.app/insert-transaction",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          mode: mode,
+        }),
+      }
+    )
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then((data) => {
+        console.log("Transaction inserted:", data);
+        // Refresh transaction data
+        fetchTransaction();
+      })
+      .catch((error) => {
+        console.error("Error inserting transaction:", error);
+      });
+  }
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
@@ -252,7 +291,9 @@ export default function DashboardPage() {
                   <CardContent className="p-6">
                     <div className="space-y-6">
                       <div>
-                        <div className="text-sm text-muted-foreground">Name</div>
+                        <div className="text-sm text-muted-foreground">
+                          Name
+                        </div>
                         <div className="text-2xl font-bold">
                           {customer
                             ? `${customer.first_name} ${customer.last_name}`
@@ -261,16 +302,22 @@ export default function DashboardPage() {
                       </div>
                       <div className="grid gap-4 md:grid-cols-2">
                         <div>
-                          <div className="text-sm text-muted-foreground">Date of Birth</div>
+                          <div className="text-sm text-muted-foreground">
+                            Date of Birth
+                          </div>
                           <div>{customer ? customer.dob : "YYYY-MM-DD"}</div>
                         </div>
                         <div>
-                          <div className="text-sm text-muted-foreground">Occupation</div>
+                          <div className="text-sm text-muted-foreground">
+                            Occupation
+                          </div>
                           <div>{customer ? customer.job : "Occupation"}</div>
                         </div>
                       </div>
                       <div>
-                        <div className="text-sm text-muted-foreground">Address</div>
+                        <div className="text-sm text-muted-foreground">
+                          Address
+                        </div>
                         <div>{customer ? customer.street : "Street Name"}</div>
                         <div>{customer ? customer.city : "City"}</div>
                         <div>
@@ -292,15 +339,27 @@ export default function DashboardPage() {
                     <span className="mr-1.5 h-2 w-2 rounded-full bg-gray-500" />
                     Reset
                   </Button>
-                  <Button variant="outline" className="text-blue-500 border-blue-500 rounded-full">
+                  <Button
+                    variant="outline"
+                    className="text-blue-500 border-blue-500 rounded-full"
+                    onClick={() => handleClick("0")}
+                  >
                     <span className="mr-1.5 h-2 w-2 rounded-full bg-blue-500" />
                     No Fraud
                   </Button>
-                  <Button variant="outline" className="text-orange-500 border-orange-500 rounded-full">
+                  <Button
+                    variant="outline"
+                    className="text-orange-500 border-orange-500 rounded-full"
+                    onClick={() => handleClick("1")}
+                  >
                     <span className="mr-1.5 h-2 w-2 rounded-full bg-orange-500" />
                     Low Fraud
                   </Button>
-                  <Button variant="outline" className="text-red-500 border-red-500 rounded-full">
+                  <Button
+                    variant="outline"
+                    className="text-red-500 border-red-500 rounded-full"
+                    onClick={() => handleClick("2")}
+                  >
                     <span className="mr-1.5 h-2 w-2 rounded-full bg-red-500" />
                     High Fraud
                   </Button>
@@ -317,10 +376,16 @@ export default function DashboardPage() {
                         <Card className="bg-zinc-900 text-white">
                           <CardContent className="p-6">
                             <div className="flex justify-between items-start mb-6">
-                              <img src="/visa.webp" alt="Visa" className="h-8" />
+                              <img
+                                src="/visa.webp"
+                                alt="Visa"
+                                className="h-8"
+                              />
                             </div>
                             <div className="space-y-1">
-                              <p className="text-gray-400">Bank of Hacklytics</p>
+                              <p className="text-gray-400">
+                                Bank of Hacklytics
+                              </p>
                               <p className="font-mono">4512 •••• •••• 1773</p>
                             </div>
                           </CardContent>
@@ -328,7 +393,9 @@ export default function DashboardPage() {
                       </div>
                       <div>
                         <div className="mb-4 text-right">
-                          <span className="text-sm text-muted-foreground">Card Status: </span>
+                          <span className="text-sm text-muted-foreground">
+                            Card Status:{" "}
+                          </span>
                           <span className="flex items-center justify-end gap-2 font-bold">
                             {customer ? (
                               customer.is_locked.toLowerCase() === "true" ? (
@@ -348,7 +415,9 @@ export default function DashboardPage() {
                           </span>
                         </div>
 
-                        <div className="mb-2 text-lg font-medium">Recent transactions</div>
+                        <div className="mb-2 text-lg font-medium">
+                          Recent transactions
+                        </div>
                         {recentTransaction ? (
                           <div className="flex items-center justify-between">
                             <div>
@@ -364,7 +433,9 @@ export default function DashboardPage() {
                               <div className="text-sm">
                                 Risk:{" "}
                                 {(() => {
-                                  const score = parseFloat(recentTransaction.is_fraud);
+                                  const score = parseFloat(
+                                    recentTransaction.is_fraud
+                                  );
                                   return getFraudRisk(score);
                                 })()}
                               </div>

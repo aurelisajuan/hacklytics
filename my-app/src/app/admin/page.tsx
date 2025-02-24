@@ -68,7 +68,7 @@ type Transaction = {
 };
 
 // Transaction Breakdown Pie Chart Component
-const TransactionBreakdownChart = () => {
+const TransactionBreakdownChart = ({ updates }: { updates: Transaction[] }) => {
   const [segmentation] = useState("category");
   const [chartData, setChartData] = useState<any>(null);
 
@@ -132,7 +132,7 @@ const TransactionBreakdownChart = () => {
       });
     }
     fetchTransactions();
-  }, [segmentation]);
+  }, [segmentation, updates]);
 
   return (
     <div className="w-full h-5/6 flex items-center justify-center pt-2">
@@ -265,7 +265,8 @@ const LiveRiskTrendLineChart = () => {
 };
 
 // Transaction Volume Bar Chart Component
-const TransactionVolumeBarChart = () => {
+const TransactionVolumeBarChart = ({ updates }: { updates: Transaction[] }) => {
+  const [segmentation] = useState("category");
   const [chartData, setChartData] = useState<any>(null);
   const riskThreshold = 0.5;
 
@@ -303,7 +304,7 @@ const TransactionVolumeBarChart = () => {
       });
     }
     fetchVolume();
-  }, []);
+  }, [segmentation, updates]);
 
   return (
     <div className="w-full h-full flex items-center justify-center p-2">
@@ -317,16 +318,22 @@ const TransactionVolumeBarChart = () => {
 };
 
 // Risk Distribution Histogram Component
-const RiskDistributionHistogram = () => {
+const RiskDistributionHistogram = ({ updates }: { updates: Transaction[] }) => {
   const [chartData, setChartData] = useState<any>(null);
   const bins = [0, 0.2, 0.4, 0.6, 0.8, 1.0];
 
   useEffect(() => {
+    const data = updates.map((tx) => ({
+      risk_fact: tx.risk_fact,
+    }));
+
+    console.log(updates);
     async function fetchRiskDistribution() {
       const { data, error } = await supabase
         .from("transaction")
         .select("risk_fact");
       if (error) return console.log(error);
+      console.log(data);
 
       const distribution = Array(bins.length - 1).fill(0);
       data.forEach((tx: any) => {
@@ -480,26 +487,54 @@ export default function Dashboard() {
   const [updates, setUpdates] = useState<Transaction[]>([]);
 
   useEffect(() => {
-    const channel = supabase
-      .channel("hacklytics")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "transaction" },
-        (payload) => {
-          console.log("Realtime update received:", payload);
-          const newUpdate = payload.new as Transaction;
-          setUpdates((prev) =>
-            prev.find((update) => update.trans_num === newUpdate.trans_num)
-              ? prev
-              : [...prev, newUpdate]
-          );
-        }
-      )
-      .subscribe();
+    async function initializeData() {
+      // Fetch customer first
+      const { data: customerData, error: customerError } = await supabase
+        .from("customer")
+        .select("*")
+        .eq("first_name", "Lisa")
+        .eq("last_name", "Lin")
+        .single();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+      if (customerError) {
+        console.error("Error fetching customer:", customerError);
+        return;
+      }
+      // Fetch initial transactions for this customer
+      const { data: transData, error: transError } = await supabase
+        .from("transaction")
+        .select("*")
+        .eq("cc_num", customerData.cc)
+        .order("trans_date", { ascending: false });
+
+      if (!transError && transData) {
+        console.log(transData);
+        setUpdates(transData);
+      }
+
+      // Set up realtime subscription
+      const channel = supabase
+        .channel("transaction-channel")
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "transaction" },
+          (payload) => {
+            console.log("Realtime update received:", payload);
+            const newUpdate = payload.new as Transaction;
+            if (newUpdate.cc_num === customerData.cc) {
+              console.log(newUpdate);
+              setUpdates([...updates, newUpdate]);
+            }
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+
+    initializeData();
   }, []);
 
   return (
@@ -546,7 +581,7 @@ export default function Dashboard() {
                 <CardTitle>Transaction Breakdown</CardTitle>
               </CardHeader>
               <CardContent className="p-2 h-full overflow-hidden">
-                <TransactionBreakdownChart />
+                <TransactionBreakdownChart updates={updates} />
               </CardContent>
             </Card>
             <Card className="rounded-lg shadow-sm">
@@ -554,7 +589,7 @@ export default function Dashboard() {
                 <CardTitle>Transaction Volume</CardTitle>
               </CardHeader>
               <CardContent className="p-5 pb-10 h-full overflow-hidden">
-                <TransactionVolumeBarChart />
+                <TransactionVolumeBarChart updates={updates} />
               </CardContent>
             </Card>
             <Card className="rounded-lg shadow-sm">
@@ -562,7 +597,7 @@ export default function Dashboard() {
                 <CardTitle>Risk Distribution</CardTitle>
               </CardHeader>
               <CardContent className="p-2 pb-10 h-full overflow-hidden">
-                <RiskDistributionHistogram />
+                <RiskDistributionHistogram updates={updates} />
               </CardContent>
             </Card>
             <Card className="rounded-lg shadow-sm">
