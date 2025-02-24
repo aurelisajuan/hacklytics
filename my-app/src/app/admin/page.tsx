@@ -78,10 +78,10 @@ const TransactionBreakdownChart = ({ updates }: { updates: Transaction[] }) => {
         segmentation === "category"
           ? "category, amt"
           : segmentation === "state"
-          ? "state, amt"
-          : segmentation === "city"
-          ? "city, amt"
-          : "category, amt";
+            ? "state, amt"
+            : segmentation === "city"
+              ? "city, amt"
+              : "category, amt";
 
       const { data, error } = await supabase
         .from("transaction")
@@ -171,7 +171,7 @@ const GoogleHeatMap = () => {
     libraries: ["visualization"],
   });
 
-  const [map, setMap] = useState<google.maps.Map | null>(null);
+  const [, setMap] = useState<google.maps.Map | null>(null);
 
   const onLoad = useCallback((map: google.maps.Map) => {
     setMap(map);
@@ -444,11 +444,10 @@ function Sidebar({
         <Link
           href="/admin"
           onClick={() => setActiveLink("dashboard")}
-          className={`mb-1 flex items-center gap-2 rounded-lg px-4 py-2 ${
-            activeLink === "dashboard"
-              ? "bg-[#E5F3FF] text-sky-600"
-              : "text-gray-500 hover:bg-[#E5F3FF] hover:text-sky-600"
-          }`}
+          className={`mb-1 flex items-center gap-2 rounded-lg px-4 py-2 ${activeLink === "dashboard"
+            ? "bg-[#E5F3FF] text-sky-600"
+            : "text-gray-500 hover:bg-[#E5F3FF] hover:text-sky-600"
+            }`}
         >
           <Home className="w-5 h-5" />
           Dashboard
@@ -456,11 +455,10 @@ function Sidebar({
         <Link
           href="/user"
           onClick={() => setActiveLink("user-profiles")}
-          className={`mb-1 flex items-center gap-2 rounded-lg px-4 py-2 ${
-            activeLink === "user-profiles"
-              ? "bg-[#E5F3FF] text-sky-600"
-              : "text-gray-500 hover:bg-[#E5F3FF] hover:text-sky-600"
-          }`}
+          className={`mb-1 flex items-center gap-2 rounded-lg px-4 py-2 ${activeLink === "user-profiles"
+            ? "bg-[#E5F3FF] text-sky-600"
+            : "text-gray-500 hover:bg-[#E5F3FF] hover:text-sky-600"
+            }`}
         >
           <User2 className="w-5 h-5" />
           User Profiles
@@ -468,11 +466,10 @@ function Sidebar({
         <Link
           href="#"
           onClick={() => setActiveLink("settings")}
-          className={`flex items-center gap-2 rounded-lg px-4 py-2 ${
-            activeLink === "settings"
-              ? "bg-[#E5F3FF] text-sky-600"
-              : "text-gray-500 hover:bg-[#E5F3FF] hover:text-sky-600"
-          }`}
+          className={`flex items-center gap-2 rounded-lg px-4 py-2 ${activeLink === "settings"
+            ? "bg-[#E5F3FF] text-sky-600"
+            : "text-gray-500 hover:bg-[#E5F3FF] hover:text-sky-600"
+            }`}
         >
           <Settings className="w-5 h-5" />
           Settings
@@ -484,7 +481,7 @@ function Sidebar({
 
 export default function Dashboard() {
   const [activeLink, setActiveLink] = useState("dashboard");
-  const [updates, setUpdates] = useState<Transaction[]>([]);
+  const [, setUpdates] = useState<Transaction[]>([]);
 
   useEffect(() => {
     async function initializeData() {
