@@ -70,22 +70,17 @@ function PhotoUploadContent() {
 
   return (
     <div className="max-h-screen bg-gray-100 flex items-center justify-center p-4">
-      {/* Phone container */}
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 0.5 }}
         className="relative w-[390px] h-screen p-[12px] shadow-2xl"
       >
-        {/* iPhone Notch */}
         <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-[160px] h-[34px]"></div>
 
-        {/* Screen Content */}
         <div className="relative w-full h-full bg-white rounded-[38px] overflow-hidden">
-          {/* Status Bar */}
           <div className="h-14 w-full bg-white"></div>
 
-          {/* App Content */}
           <div className="h-full overflow-y-auto pb-20">
             <div className="flex flex-col items-center justify-center px-4">
               <Card>
