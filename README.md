@@ -1,5 +1,7 @@
 # **Banklytics: AI-Powered Fraud Detection & Multi-Layer Authentication**
 
+![Banklytics](my-app/public/banklytics.png)
+
 ## **💡 Inspiration**
 
 Fraud prevention today relies on **easily bypassed SMS alerts**, which can be hijacked through **SIM swaps, phishing, and malware**. But what happens when AI-generated scams, voice cloning, and deepfake fraud enter the picture? Current systems **aren’t built to handle next-gen fraud attacks.**
